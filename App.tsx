@@ -85,17 +85,20 @@ interface PersonnelFieldProps {
   value: string;
   onChange: (v: string) => void;
   theme: Theme;
+  uiMode?: UIMode;
 }
 
-const PersonnelField: React.FC<PersonnelFieldProps> = ({ icon, label, value, onChange, theme }) => {
+const PersonnelField: React.FC<PersonnelFieldProps> = ({ icon, label, value, onChange, theme, uiMode = 'desktop' }) => {
   const isLight = theme === 'light';
+  const isTv = uiMode === 'tv';
+  
   return (
-    <div className={`${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-800/30 border-slate-700/40 shadow-inner'} border rounded-2xl p-4 lg:p-5 transition-all hover:border-blue-500/50 group`}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`${isLight ? 'bg-slate-100 text-blue-600 border-slate-200' : 'bg-slate-900 text-blue-400 border-slate-800'} p-2 rounded-xl group-hover:text-white group-hover:bg-blue-600 transition-colors border`}>
-          {icon}
+    <div className={`${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-800/30 border-slate-700/40 shadow-inner'} border rounded-2xl ${isTv ? 'p-10' : 'p-4 lg:p-5'} transition-all hover:border-blue-500/50 group`}>
+      <div className={`flex items-center gap-3 ${isTv ? 'mb-6' : 'mb-3'}`}>
+        <div className={`${isLight ? 'bg-slate-100 text-blue-600 border-slate-200' : 'bg-slate-900 text-blue-400 border-slate-800'} ${isTv ? 'p-5 rounded-2xl' : 'p-2 rounded-xl'} group-hover:text-white group-hover:bg-blue-600 transition-colors border`}>
+          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: isTv ? 40 : 18 }) : icon}
         </div>
-        <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+        <span className={`${isTv ? 'text-2xl' : 'text-[10px]'} font-black uppercase tracking-widest leading-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
           {label}
         </span>
       </div>
@@ -104,7 +107,7 @@ const PersonnelField: React.FC<PersonnelFieldProps> = ({ icon, label, value, onC
         placeholder="NOME / GRAD"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300' : 'bg-slate-950/50 border-slate-800 text-white placeholder:text-slate-700'} placeholder:text-[10px]`}
+        className={`w-full rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300' : 'bg-slate-950/50 border-slate-800 text-white placeholder:text-slate-700'} ${isTv ? 'px-8 py-6 text-4xl' : 'px-4 py-3 text-sm font-bold'} placeholder:text-[10px]`}
       />
     </div>
   );
@@ -143,7 +146,7 @@ const App: React.FC = () => {
   const [personnelData, setPersonnelData] = useState<PersonnelData>(DEFAULT_PERSONNEL);
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('custom_ship_logo'));
   const [view, setView] = useState<'dashboard' | 'equipment' | 'fuel' | 'stability' | 'tv' | 'tablet' | 'smartphone'>('dashboard');
-  const [kioskTab, setKioskTab] = useState<'systems' | 'fuel' | 'stability'>('systems');
+  const [kioskTab, setKioskTab] = useState<'dashboard' | 'systems' | 'fuel' | 'stability'>('dashboard');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -240,10 +243,55 @@ const App: React.FC = () => {
     </div>
   );
 
+  const renderPersonnelSection = (mode: UIMode) => {
+    const isTv = mode === 'tv';
+    return (
+      <section className={`${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'} border rounded-[3rem] ${isTv ? 'p-16' : 'p-8 lg:p-12'} shadow-2xl transition-colors duration-500`}>
+        <div className={`flex items-center gap-6 mb-10 border-b pb-8 ${theme === 'light' ? 'border-slate-100' : 'border-slate-800'}`}>
+          <div className={`${isTv ? 'p-8' : 'p-4'} bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/20`}><Users className={`${isTv ? 'w-16 h-16' : 'w-8 h-8'} text-white`} /></div>
+          <h3 className={`${isTv ? 'text-7xl' : 'text-4xl'} font-black uppercase tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Tabela e Quarto de Serviço</h3>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+          <PersonnelField uiMode={mode} icon={<Shield />} label="Supervisor MO" value={personnelData.supervisorMO} onChange={(v) => handlePersonnelChange('supervisorMO', v)} theme={theme} />
+          <PersonnelField uiMode={mode} icon={<Shield />} label="Supervisor EL" value={personnelData.supervisorEL} onChange={(v) => handlePersonnelChange('supervisorEL', v)} theme={theme} />
+          <PersonnelField uiMode={mode} icon={<UserCheck />} label="Fiel de Cav" value={personnelData.fielCav} onChange={(v) => handlePersonnelChange('fielCav', v)} theme={theme} />
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <p className={`${isTv ? 'text-2xl mb-8' : 'text-[10px] mb-4'} font-black uppercase tracking-[0.2em] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Fiel das Auxiliares (3 Militares)</p>
+            <div className={`grid grid-cols-1 ${isTv ? 'gap-8' : 'md:grid-cols-3 gap-4'}`}>
+              {[0,1,2].map(i => (
+                <PersonnelField uiMode={mode} key={i} icon={<Wrench />} label={`Fiel Auxiliar ${i+1}`} value={personnelData.fielAuxiliares[i]} onChange={(v) => {
+                  const copy = [...personnelData.fielAuxiliares];
+                  copy[i] = v;
+                  handlePersonnelChange('fielAuxiliares', copy);
+                }} theme={theme} />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-4">
+            <p className={`${isTv ? 'text-2xl mb-8' : 'text-[10px] mb-4'} font-black uppercase tracking-[0.2em] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Patrulha do Cav (3 Militares)</p>
+            <div className={`grid grid-cols-1 ${isTv ? 'gap-8' : 'md:grid-cols-3 gap-4'}`}>
+              {[0,1,2].map(i => (
+                <PersonnelField uiMode={mode} key={i} icon={<Activity />} label={`Patrulha ${i+1}`} value={personnelData.patrulhaCav[i]} onChange={(v) => {
+                  const copy = [...personnelData.patrulhaCav];
+                  copy[i] = v;
+                  handlePersonnelChange('patrulhaCav', copy);
+                }} theme={theme} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
   return (
     <div className={`min-h-screen flex flex-col lg:flex-row ${getThemeClasses()} overflow-hidden transition-colors duration-500`}>
       
-      {/* INTERFACE NORMAL DO APP */}
+      {/* INTERFACE NORMAL DO APP (DESKTOP) */}
       {!isKioskMode ? (
         <>
           <aside className={`w-80 ${theme === 'light' ? 'bg-white border-slate-200' : (theme === 'navy' ? 'bg-blue-900 border-blue-800' : 'bg-slate-900 border-slate-800')} border-r flex flex-col p-8 hidden lg:flex transition-colors duration-500`}>
@@ -297,46 +345,7 @@ const App: React.FC = () => {
             <div className="p-8 lg:p-12 space-y-12">
               {view === 'dashboard' && (
                 <div className="space-y-12 animate-in fade-in duration-700">
-                  <section className={`${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'} border rounded-[3rem] p-8 lg:p-12 shadow-2xl transition-colors duration-500`}>
-                    <div className={`flex items-center gap-6 mb-10 border-b pb-8 ${theme === 'light' ? 'border-slate-100' : 'border-slate-800'}`}>
-                      <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/20"><Users className="w-8 h-8 text-white" /></div>
-                      <h3 className={`text-4xl font-black uppercase tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Tabela e Quarto de Serviço</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-                      <PersonnelField icon={<Shield size={18} />} label="Supervisor MO" value={personnelData.supervisorMO} onChange={(v) => handlePersonnelChange('supervisorMO', v)} theme={theme} />
-                      <PersonnelField icon={<Shield size={18} />} label="Supervisor EL" value={personnelData.supervisorEL} onChange={(v) => handlePersonnelChange('supervisorEL', v)} theme={theme} />
-                      <PersonnelField icon={<UserCheck size={18} />} label="Fiel de Cav" value={personnelData.fielCav} onChange={(v) => handlePersonnelChange('fielCav', v)} theme={theme} />
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                      <div className="space-y-4">
-                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Fiel das Auxiliares (3 Militares)</p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {[0,1,2].map(i => (
-                            <PersonnelField key={i} icon={<Wrench size={18} />} label={`Fiel Auxiliar ${i+1}`} value={personnelData.fielAuxiliares[i]} onChange={(v) => {
-                              const copy = [...personnelData.fielAuxiliares];
-                              copy[i] = v;
-                              handlePersonnelChange('fielAuxiliares', copy);
-                            }} theme={theme} />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Patrulha do Cav (3 Militares)</p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {[0,1,2].map(i => (
-                            <PersonnelField key={i} icon={<Activity size={18} />} label={`Patrulha ${i+1}`} value={personnelData.patrulhaCav[i]} onChange={(v) => {
-                              const copy = [...personnelData.patrulhaCav];
-                              copy[i] = v;
-                              handlePersonnelChange('patrulhaCav', copy);
-                            }} theme={theme} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
+                  {renderPersonnelSection('desktop')}
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     <FuelPanel fuel={fuelData} onChange={handleFuelChange} uiMode="desktop" />
                     <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode="desktop" />
@@ -377,14 +386,16 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-4 mt-2">
-              <button onClick={() => setKioskTab('systems')} className={`flex-1 ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'systems' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Equipamentos</button>
-              <button onClick={() => setKioskTab('fuel')} className={`flex-1 ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'fuel' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Cargas</button>
-              <button onClick={() => setKioskTab('stability')} className={`flex-1 ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'stability' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Estabilidade</button>
+            <div className="flex gap-4 mt-2 overflow-x-auto pb-2 scrollbar-hide">
+              <button onClick={() => setKioskTab('dashboard')} className={`flex-1 min-w-[120px] ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'dashboard' ? 'bg-indigo-600 border-indigo-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Serviço</button>
+              <button onClick={() => setKioskTab('systems')} className={`flex-1 min-w-[120px] ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'systems' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Equipamentos</button>
+              <button onClick={() => setKioskTab('fuel')} className={`flex-1 min-w-[120px] ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'fuel' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Cargas</button>
+              <button onClick={() => setKioskTab('stability')} className={`flex-1 min-w-[120px] ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'stability' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Estabilidade</button>
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-12">
+          <div className={`flex-1 overflow-y-auto ${currentUIMode === 'tv' ? 'p-20' : 'p-6 md:p-12'}`}>
+            {kioskTab === 'dashboard' && renderPersonnelSection(currentUIMode)}
             {kioskTab === 'systems' && (
               <div className="space-y-12">
                 {CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode={currentUIMode} />)}
