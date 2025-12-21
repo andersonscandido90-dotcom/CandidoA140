@@ -21,6 +21,18 @@ export interface FuelData {
   lubOil: number;
   fuelOil: number;
   jp5: number;
+  maxWater: number;
+  maxLubOil: number;
+  maxFuelOil: number;
+  maxJp5: number;
+}
+
+export interface StabilityData {
+  draftForward: number; // Calado AV
+  draftAft: number;     // Calado AR
+  heel: number;         // Banda (Graus)
+  gm: number;           // Altura Metacêntrica
+  displacement: number; // Deslocamento
 }
 
 export interface EquipmentData {
@@ -31,6 +43,7 @@ export interface DailyReport {
   date: string;
   equipment: EquipmentData;
   fuel: FuelData;
+  stability: StabilityData;
 }
 
 export interface EquipmentCategory {
