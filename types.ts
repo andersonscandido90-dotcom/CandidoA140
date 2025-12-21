@@ -35,6 +35,14 @@ export interface StabilityData {
   displacement: number; // Deslocamento
 }
 
+export interface PersonnelData {
+  supervisorMO: string;
+  supervisorEL: string;
+  fielCav: string;
+  fielAuxiliares: string[];
+  patrulhaCav: string[];
+}
+
 export interface EquipmentData {
   [name: string]: EquipmentStatus;
 }
@@ -44,6 +52,7 @@ export interface DailyReport {
   equipment: EquipmentData;
   fuel: FuelData;
   stability: StabilityData;
+  personnel: PersonnelData;
 }
 
 export interface EquipmentCategory {
