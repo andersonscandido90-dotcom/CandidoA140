@@ -49,7 +49,7 @@ const StabilityPanel: React.FC<Props> = ({ data, onChange, uiMode = 'desktop' })
 
   return (
     <div className={`bg-slate-900/80 border border-slate-800 shadow-2xl rounded-[3rem] flex flex-col ${isTv ? 'p-20 gap-20' : 'p-6 lg:p-10 gap-10'} w-full backdrop-blur-md`}>
-      {/* Header com Resumo Rápido e Subtítulos Táticos */}
+      {/* Header com Resumo Rápido */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-800/60 pb-10">
         <div className="flex items-center gap-6">
           <div className="p-5 bg-blue-600 rounded-2xl shadow-xl shadow-blue-900/40">
@@ -59,14 +59,6 @@ const StabilityPanel: React.FC<Props> = ({ data, onChange, uiMode = 'desktop' })
             <h3 className={`font-black text-white uppercase tracking-tighter leading-none ${isTv ? 'text-8xl' : 'text-4xl lg:text-5xl'}`}>
               Estabilidade
             </h3>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] font-mono animate-pulse">
-                <Activity size={12} /> Ataque Contínuo
-              </span>
-              <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] font-mono">
-                Modo Agressivo
-              </span>
-            </div>
           </div>
         </div>
 
@@ -94,7 +86,7 @@ const StabilityPanel: React.FC<Props> = ({ data, onChange, uiMode = 'desktop' })
                  <Ship className="w-5 h-5 text-blue-400" /> Perfil Longitudinal
                </span>
                <span className={`font-black uppercase text-[10px] lg:text-sm tracking-widest ${trim > 0 ? 'text-indigo-400' : trim < 0 ? 'text-blue-400' : 'text-slate-500'}`}>
-                 {trim > 0 ? "Derrabado (AR)" : trim < 0 ? "Bicado (AV)" : "Nivelado"}
+                 {trim > 0 ? "Derrabado (AR)" : trim < 0 ? "Abicado (AV)" : "Nivelado"}
                </span>
             </div>
 
@@ -117,12 +109,12 @@ const StabilityPanel: React.FC<Props> = ({ data, onChange, uiMode = 'desktop' })
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-1 h-12 bg-gradient-to-t from-blue-500/40 to-transparent"></div>
                   <p className="text-2xl lg:text-4xl font-black text-white leading-none">{data.draftForward.toFixed(1)}m</p>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">AV (Vante)</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">AV</p>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-1 h-12 bg-gradient-to-t from-blue-500/40 to-transparent"></div>
                   <p className="text-2xl lg:text-4xl font-black text-white leading-none">{data.draftAft.toFixed(1)}m</p>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">AR (Réis)</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">AR</p>
                 </div>
               </div>
             </div>

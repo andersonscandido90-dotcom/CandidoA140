@@ -3,7 +3,6 @@ import React, { useState, useEffect, memo, useRef } from 'react';
 import { 
   Activity, 
   Droplets, 
-  Download, 
   LayoutDashboard,
   Clock,
   Menu,
@@ -214,22 +213,6 @@ const App: React.FC = () => {
     saveCurrentData(undefined, undefined, undefined, { ...personnelData, [key]: val });
   };
 
-  const exportData = () => {
-    const allData: Record<string, DailyReport> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('report_')) {
-        allData[key] = JSON.parse(localStorage.getItem(key)!);
-      }
-    }
-    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `atlantico_report_${selectedDate}.json`;
-    a.click();
-  };
-
   const isKioskMode = view === 'tv' || view === 'tablet' || view === 'smartphone';
   const currentUIMode: UIMode = 
     view === 'tv' ? 'tv' : 
@@ -241,7 +224,6 @@ const App: React.FC = () => {
     return `${day}/${month}/${year}`;
   };
 
-  // Tema Classes Helper
   const getThemeClasses = () => {
     switch(theme) {
       case 'navy': return 'bg-blue-950 text-white';
@@ -258,67 +240,163 @@ const App: React.FC = () => {
     </div>
   );
 
-  if (isKioskMode) {
-    const headerScale = currentUIMode === 'tv' ? 'p-16' : currentUIMode === 'tablet' ? 'p-10' : 'p-6';
-    const titleScale = currentUIMode === 'tv' ? 'text-9xl' : currentUIMode === 'tablet' ? 'text-6xl' : 'text-3xl';
-    const dateScale = currentUIMode === 'tv' ? 'text-6xl mt-8' : currentUIMode === 'tablet' ? 'text-3xl mt-4' : 'text-sm mt-2';
-    const logoSize = currentUIMode === 'tv' ? 'w-56' : currentUIMode === 'tablet' ? 'w-32' : 'w-20';
-    const tabTextSize = currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4';
-    const iconSize = currentUIMode === 'tv' ? 'w-20 h-20' : currentUIMode === 'tablet' ? 'w-10 h-10' : 'w-5 h-5';
+  return (
+    <div className={`min-h-screen flex flex-col lg:flex-row ${getThemeClasses()} overflow-hidden transition-colors duration-500`}>
+      
+      {/* INTERFACE NORMAL DO APP */}
+      {!isKioskMode ? (
+        <>
+          <aside className={`w-80 ${theme === 'light' ? 'bg-white border-slate-200' : (theme === 'navy' ? 'bg-blue-900 border-blue-800' : 'bg-slate-900 border-slate-800')} border-r flex flex-col p-8 hidden lg:flex transition-colors duration-500`}>
+            <div className="flex flex-col items-center gap-6 mb-12">
+              <button onClick={() => fileInputRef.current?.click()} className="group relative">
+                <ShipLogo className="w-32 h-auto" customUrl={customLogo} />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl flex items-center justify-center"><Upload className="text-white" /></div>
+              </button>
+              <div className="text-center">
+                <h1 className={`font-black text-2xl ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{SHIP_CONFIG.name}</h1>
+                <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mt-2">ATAQUE CONTÍNUO E AGRESSIVO</p>
+              </div>
+            </div>
 
-    const headerBg = theme === 'light' ? 'bg-white/80 border-slate-200' : 'bg-slate-900/50 border-slate-800';
+            <nav className="flex-1 space-y-2">
+              <NavItem active={view === 'dashboard'} icon={<LayoutDashboard size={24} />} label="Dashboard" onClick={() => setView('dashboard')} theme={theme} />
+              <NavItem active={view === 'equipment'} icon={<Activity size={24} />} label="Equipamentos" onClick={() => setView('equipment')} theme={theme} />
+              <NavItem active={view === 'fuel'} icon={<Droplets size={24} />} label="Carga Líquida" onClick={() => setView('fuel')} theme={theme} />
+              <NavItem active={view === 'stability'} icon={<Compass size={24} />} label="Estabilidade" onClick={() => setView('stability')} theme={theme} />
+              
+              <div className="pt-8 space-y-4">
+                 <p className={`text-[10px] font-black uppercase tracking-widest px-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-600'}`}>Visualização Tática</p>
+                 <NavItem active={false} icon={<Monitor size={24} />} label="Modo TV" variant="special" onClick={() => setView('tv')} theme={theme} />
+                 <NavItem active={false} icon={<Tablet size={24} />} label="Modo Tablet" variant="special" onClick={() => setView('tablet')} theme={theme} />
+                 <NavItem active={false} icon={<Smartphone size={24} />} label="Modo Celular" variant="special" onClick={() => setView('smartphone')} theme={theme} />
+              </div>
+            </nav>
 
-    return (
-      <div className={`fixed inset-0 ${getThemeClasses()} overflow-hidden flex flex-col transition-colors duration-500`}>
-        <header className={`flex flex-col gap-6 ${headerScale} ${headerBg} border-b-4 backdrop-blur-md`}>
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-6 lg:gap-12">
-              <ShipLogo className={logoSize} customUrl={customLogo} />
-              <div>
-                <h1 className={`${titleScale} font-black tracking-tighter leading-none`}>
-                  {SHIP_CONFIG.name} <span className="text-blue-500">{SHIP_CONFIG.hullNumber}</span>
-                </h1>
-                <div className="flex flex-col">
-                  <p className="text-blue-400 font-black uppercase tracking-[0.2em] mt-4">ATAQUE CONTÍNUO E AGRESSIVO</p>
-                  <div className={`flex items-center gap-4 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'} font-black font-mono ${dateScale}`}>
-                    <Calendar className={iconSize} /> {formatDisplayDate(selectedDate)}
+            <div className="mt-auto space-y-4">
+              <div className="px-4">
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-3 ${theme === 'light' ? 'text-slate-400' : 'text-slate-600'}`}>Esquema de Cores</p>
+                <ThemeSelector />
+              </div>
+            </div>
+          </aside>
+
+          <main className="flex-1 overflow-y-auto max-h-screen">
+            <header className={`p-8 lg:p-12 ${theme === 'light' ? 'bg-white/80 border-slate-200 text-slate-900' : 'bg-slate-900/40 border-slate-800 text-white'} border-b flex items-center justify-between sticky top-0 z-30 backdrop-blur-xl transition-all duration-500`}>
+               <div className="flex items-center gap-8">
+                 <ShipLogo className="w-20 hidden md:block" customUrl={customLogo} />
+                 <div>
+                   <h2 className={`text-4xl lg:text-5xl font-black ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{SHIP_CONFIG.name}</h2>
+                   <div className="flex items-center gap-4 mt-2">
+                     <Calendar className="text-blue-500" size={20} />
+                     <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className={`px-4 py-1 rounded-lg font-bold border transition-all ${theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-900 focus:border-blue-500' : 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500'}`} />
+                   </div>
+                 </div>
+               </div>
+            </header>
+
+            <div className="p-8 lg:p-12 space-y-12">
+              {view === 'dashboard' && (
+                <div className="space-y-12 animate-in fade-in duration-700">
+                  <section className={`${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'} border rounded-[3rem] p-8 lg:p-12 shadow-2xl transition-colors duration-500`}>
+                    <div className={`flex items-center gap-6 mb-10 border-b pb-8 ${theme === 'light' ? 'border-slate-100' : 'border-slate-800'}`}>
+                      <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/20"><Users className="w-8 h-8 text-white" /></div>
+                      <h3 className={`text-4xl font-black uppercase tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Tabela e Quarto de Serviço</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+                      <PersonnelField icon={<Shield size={18} />} label="Supervisor MO" value={personnelData.supervisorMO} onChange={(v) => handlePersonnelChange('supervisorMO', v)} theme={theme} />
+                      <PersonnelField icon={<Shield size={18} />} label="Supervisor EL" value={personnelData.supervisorEL} onChange={(v) => handlePersonnelChange('supervisorEL', v)} theme={theme} />
+                      <PersonnelField icon={<UserCheck size={18} />} label="Fiel de Cav" value={personnelData.fielCav} onChange={(v) => handlePersonnelChange('fielCav', v)} theme={theme} />
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Fiel das Auxiliares (3 Militares)</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {[0,1,2].map(i => (
+                            <PersonnelField key={i} icon={<Wrench size={18} />} label={`Fiel Auxiliar ${i+1}`} value={personnelData.fielAuxiliares[i]} onChange={(v) => {
+                              const copy = [...personnelData.fielAuxiliares];
+                              copy[i] = v;
+                              handlePersonnelChange('fielAuxiliares', copy);
+                            }} theme={theme} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Patrulha do Cav (3 Militares)</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {[0,1,2].map(i => (
+                            <PersonnelField key={i} icon={<Activity size={18} />} label={`Patrulha ${i+1}`} value={personnelData.patrulhaCav[i]} onChange={(v) => {
+                              const copy = [...personnelData.patrulhaCav];
+                              copy[i] = v;
+                              handlePersonnelChange('patrulhaCav', copy);
+                            }} theme={theme} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <FuelPanel fuel={fuelData} onChange={handleFuelChange} uiMode="desktop" />
+                    <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode="desktop" />
+                  </div>
+                </div>
+              )}
+
+              {view === 'equipment' && CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode="desktop" />)}
+              {view === 'fuel' && <FuelPanel fuel={fuelData} onChange={handleFuelChange} fullWidth uiMode="desktop" />}
+              {view === 'stability' && <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode="desktop" />}
+            </div>
+          </main>
+        </>
+      ) : (
+        /* MODO KIOSK (TV, TABLET, SMARTPHONE) */
+        <div className={`fixed inset-0 ${getThemeClasses()} overflow-hidden flex flex-col transition-colors duration-500`}>
+          <header className={`flex flex-col gap-6 ${currentUIMode === 'tv' ? 'p-16' : currentUIMode === 'tablet' ? 'p-10' : 'p-6'} ${theme === 'light' ? 'bg-white/80 border-slate-200' : 'bg-slate-900/50 border-slate-800'} border-b-4 backdrop-blur-md`}>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-6 lg:gap-12">
+                <ShipLogo className={currentUIMode === 'tv' ? 'w-56' : currentUIMode === 'tablet' ? 'w-32' : 'w-20'} customUrl={customLogo} />
+                <div>
+                  <h1 className={`${currentUIMode === 'tv' ? 'text-9xl' : currentUIMode === 'tablet' ? 'text-6xl' : 'text-3xl'} font-black tracking-tighter leading-none`}>
+                    {SHIP_CONFIG.name} <span className="text-blue-500">{SHIP_CONFIG.hullNumber}</span>
+                  </h1>
+                  <div className="flex flex-col">
+                    <p className="text-blue-400 font-black uppercase tracking-[0.2em] mt-4">ATAQUE CONTÍNUO E AGRESSIVO</p>
+                    <div className={`flex items-center gap-4 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'} font-black font-mono ${currentUIMode === 'tv' ? 'text-6xl mt-8' : currentUIMode === 'tablet' ? 'text-3xl mt-4' : 'text-sm mt-2'}`}>
+                      <Calendar className={currentUIMode === 'tv' ? 'w-20 h-20' : currentUIMode === 'tablet' ? 'w-10 h-10' : 'w-5 h-5'} /> {formatDisplayDate(selectedDate)}
+                    </div>
                   </div>
                 </div>
               </div>
+              <div className="flex items-center gap-8">
+                <ThemeSelector />
+                <button onClick={() => setView('dashboard')} className="p-6 rounded-[2rem] bg-red-600/10 border-2 border-red-600/30 text-red-500 font-black flex items-center gap-4 hover:bg-red-600/20 transition-all">
+                  <Minimize2 className={currentUIMode === 'tv' ? 'w-20 h-20' : currentUIMode === 'tablet' ? 'w-10 h-10' : 'w-5 h-5'} /> SAIR
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-8">
-              <ThemeSelector />
-              <button onClick={() => setView('dashboard')} className="p-6 rounded-[2rem] bg-red-600/10 border-2 border-red-600/30 text-red-500 font-black flex items-center gap-4 hover:bg-red-600/20 transition-all">
-                <Minimize2 className={iconSize} /> SAIR
-              </button>
-            </div>
-          </div>
 
-          <div className="flex gap-4 mt-2">
-            <button onClick={() => setKioskTab('systems')} className={`flex-1 ${tabTextSize} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'systems' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Sistemas</button>
-            <button onClick={() => setKioskTab('fuel')} className={`flex-1 ${tabTextSize} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'fuel' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Cargas</button>
-            <button onClick={() => setKioskTab('stability')} className={`flex-1 ${tabTextSize} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'stability' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Estabilidade</button>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-12">
-          {kioskTab === 'systems' && (
-            <div className="space-y-12">
-              {CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode={currentUIMode} />)}
+            <div className="flex gap-4 mt-2">
+              <button onClick={() => setKioskTab('systems')} className={`flex-1 ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'systems' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Equipamentos</button>
+              <button onClick={() => setKioskTab('fuel')} className={`flex-1 ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'fuel' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Cargas</button>
+              <button onClick={() => setKioskTab('stability')} className={`flex-1 ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-sm py-4'} rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === 'stability' ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>Estabilidade</button>
             </div>
-          )}
-          {kioskTab === 'fuel' && <FuelPanel fuel={fuelData} onChange={handleFuelChange} fullWidth uiMode={currentUIMode} />}
-          {kioskTab === 'stability' && <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode={currentUIMode} />}
+          </header>
+
+          <div className="flex-1 overflow-y-auto p-12">
+            {kioskTab === 'systems' && (
+              <div className="space-y-12">
+                {CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode={currentUIMode} />)}
+              </div>
+            )}
+            {kioskTab === 'fuel' && <FuelPanel fuel={fuelData} onChange={handleFuelChange} fullWidth uiMode={currentUIMode} />}
+            {kioskTab === 'stability' && <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode={currentUIMode} />}
+          </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  const sidebarBg = theme === 'light' ? 'bg-white border-slate-200' : (theme === 'navy' ? 'bg-blue-900 border-blue-800' : 'bg-slate-900 border-slate-800');
-  const mainHeaderBg = theme === 'light' ? 'bg-white/80 border-slate-200 text-slate-900' : 'bg-slate-900/40 border-slate-800 text-white';
-
-  return (
-    <div className={`min-h-screen flex flex-col lg:flex-row ${getThemeClasses()} overflow-hidden transition-colors duration-500`}>
+      {/* INPUTS ESCONDIDOS */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -331,122 +409,6 @@ const App: React.FC = () => {
           reader.readAsDataURL(file);
         }
       }} />
-
-      <aside className={`w-80 ${sidebarBg} border-r flex flex-col p-8 hidden lg:flex transition-colors duration-500`}>
-        <div className="flex flex-col items-center gap-6 mb-12">
-          <button onClick={() => fileInputRef.current?.click()} className="group relative">
-            <ShipLogo className="w-32 h-auto" customUrl={customLogo} />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl flex items-center justify-center"><Upload className="text-white" /></div>
-          </button>
-          <div className="text-center">
-            <h1 className={`font-black text-2xl ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{SHIP_CONFIG.name}</h1>
-            <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mt-2">ATAQUE CONTÍNUO E AGRESSIVO</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 space-y-2">
-          <NavItem active={view === 'dashboard'} icon={<LayoutDashboard size={24} />} label="Dashboard" onClick={() => setView('dashboard')} theme={theme} />
-          <NavItem active={view === 'equipment'} icon={<Activity size={24} />} label="Equipamentos" onClick={() => setView('equipment')} theme={theme} />
-          <NavItem active={view === 'fuel'} icon={<Droplets size={24} />} label="Carga Líquida" onClick={() => setView('fuel')} theme={theme} />
-          <NavItem active={view === 'stability'} icon={<Compass size={24} />} label="Estabilidade" onClick={() => setView('stability')} theme={theme} />
-          
-          <div className="pt-8 space-y-4">
-             <p className={`text-[10px] font-black uppercase tracking-widest px-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-600'}`}>Visualização Tática</p>
-             <NavItem active={false} icon={<Monitor size={24} />} label="Modo TV" variant="special" onClick={() => setView('tv')} theme={theme} />
-             <NavItem active={false} icon={<Tablet size={24} />} label="Modo Tablet" variant="special" onClick={() => setView('tablet')} theme={theme} />
-             <NavItem active={false} icon={<Smartphone size={24} />} label="Modo Celular" variant="special" onClick={() => setView('smartphone')} theme={theme} />
-          </div>
-        </nav>
-
-        <div className="mt-auto space-y-4">
-          <div className="px-4">
-            <p className={`text-[10px] font-black uppercase tracking-widest mb-3 ${theme === 'light' ? 'text-slate-400' : 'text-slate-600'}`}>Esquema de Cores</p>
-            <ThemeSelector />
-          </div>
-          <button onClick={exportData} className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold border transition-colors ${theme === 'light' ? 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200' : 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700'}`}>
-            <Download size={20} /> Exportar
-          </button>
-        </div>
-      </aside>
-
-      <main className="flex-1 overflow-y-auto max-h-screen">
-        <header className={`p-8 lg:p-12 ${mainHeaderBg} border-b flex items-center justify-between sticky top-0 z-30 backdrop-blur-xl transition-all duration-500`}>
-           <div className="flex items-center gap-8">
-             <ShipLogo className="w-20 hidden md:block" customUrl={customLogo} />
-             <div>
-               <h2 className={`text-4xl lg:text-5xl font-black ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{SHIP_CONFIG.name}</h2>
-               <div className="flex items-center gap-4 mt-2">
-                 <Calendar className="text-blue-500" size={20} />
-                 <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className={`px-4 py-1 rounded-lg font-bold border transition-all ${theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-900 focus:border-blue-500' : 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500'}`} />
-               </div>
-             </div>
-           </div>
-           <div className="hidden xl:flex items-center gap-6">
-              <div className="text-right">
-                <p className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Tempo Real</p>
-                <p className={`text-2xl font-black ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{new Date().toLocaleTimeString()}</p>
-              </div>
-              <div className={`h-10 w-px ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
-              <Activity className="text-green-500 animate-pulse" />
-           </div>
-        </header>
-
-        <div className="p-8 lg:p-12 space-y-12">
-          {view === 'dashboard' && (
-            <div className="space-y-12 animate-in fade-in duration-700">
-              
-              <section className={`${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'} border rounded-[3rem] p-8 lg:p-12 shadow-2xl transition-colors duration-500`}>
-                <div className={`flex items-center gap-6 mb-10 border-b pb-8 ${theme === 'light' ? 'border-slate-100' : 'border-slate-800'}`}>
-                  <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/20"><Users className="w-8 h-8 text-white" /></div>
-                  <h3 className={`text-4xl font-black uppercase tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Equipe de Quarto / Prontidão</h3>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-                  <PersonnelField icon={<Shield size={18} />} label="Supervisor MO" value={personnelData.supervisorMO} onChange={(v) => handlePersonnelChange('supervisorMO', v)} theme={theme} />
-                  <PersonnelField icon={<Shield size={18} />} label="Supervisor EL" value={personnelData.supervisorEL} onChange={(v) => handlePersonnelChange('supervisorEL', v)} theme={theme} />
-                  <PersonnelField icon={<UserCheck size={18} />} label="Fiel de Cav" value={personnelData.fielCav} onChange={(v) => handlePersonnelChange('fielCav', v)} theme={theme} />
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Fiel das Auxiliares (3 Militares)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[0,1,2].map(i => (
-                        <PersonnelField key={i} icon={<Wrench size={18} />} label={`Fiel Auxiliar ${i+1}`} value={personnelData.fielAuxiliares[i]} onChange={(v) => {
-                          const copy = [...personnelData.fielAuxiliares];
-                          copy[i] = v;
-                          handlePersonnelChange('fielAuxiliares', copy);
-                        }} theme={theme} />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Patrulha do Cav (3 Militares)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[0,1,2].map(i => (
-                        <PersonnelField key={i} icon={<Activity size={18} />} label={`Patrulha ${i+1}`} value={personnelData.patrulhaCav[i]} onChange={(v) => {
-                          const copy = [...personnelData.patrulhaCav];
-                          copy[i] = v;
-                          handlePersonnelChange('patrulhaCav', copy);
-                        }} theme={theme} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <FuelPanel fuel={fuelData} onChange={handleFuelChange} uiMode="desktop" />
-                <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode="desktop" />
-              </div>
-            </div>
-          )}
-
-          {view === 'equipment' && CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode="desktop" />)}
-          {view === 'fuel' && <FuelPanel fuel={fuelData} onChange={handleFuelChange} fullWidth uiMode="desktop" />}
-          {view === 'stability' && <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode="desktop" />}
-        </div>
-      </main>
     </div>
   );
 };
