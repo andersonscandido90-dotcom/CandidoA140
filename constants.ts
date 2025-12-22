@@ -1,4 +1,3 @@
-
 import { EquipmentStatus, StatusConfig, EquipmentCategory } from './types';
 
 export const STATUS_CONFIG: Record<EquipmentStatus, StatusConfig> = {

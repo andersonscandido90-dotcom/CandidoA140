@@ -7,14 +7,9 @@ import { BarChart3 } from 'lucide-react';
 
 interface Props {
   data: EquipmentData;
-  uiMode?: 'desktop' | 'tv' | 'tablet' | 'phone';
 }
 
-const StatusCharts: React.FC<Props> = ({ data, uiMode = 'desktop' }) => {
-  const isTv = uiMode === 'tv';
-  const isTablet = uiMode === 'tablet';
-  const isPhone = uiMode === 'phone';
-
+const StatusCharts: React.FC<Props> = ({ data }) => {
   const chartData = Object.values(STATUS_CONFIG).map(config => {
     const count = Object.values(data).filter(status => status === config.id).length;
     return {
@@ -24,31 +19,30 @@ const StatusCharts: React.FC<Props> = ({ data, uiMode = 'desktop' }) => {
     };
   }).filter(item => item.value > 0);
 
-  const containerHeight = isTv ? 'h-[800px]' : isTablet ? 'h-[500px]' : isPhone ? 'h-[400px]' : 'h-[400px]';
-
   return (
-    <div className={`bg-slate-900 border border-slate-800 shadow-2xl flex flex-col rounded-[2.5rem] ${isTv ? 'p-16' : 'p-8'} ${containerHeight}`}>
-      <h3 className={`font-black flex items-center gap-4 text-white uppercase ${isTv ? 'text-5xl mb-12' : 'text-xl mb-6'}`}>
-        <BarChart3 className={`${isTv ? 'w-12 h-12' : 'w-6 h-6'} text-blue-400`} />
+    <div className="bg-slate-900 border border-slate-800 shadow-2xl flex flex-col rounded-[2rem] lg:rounded-[3rem] p-6 lg:p-10 min-h-[420px] lg:h-full">
+      <h3 className="font-black flex items-center gap-4 text-white uppercase text-xl lg:text-3xl mb-8">
+        <BarChart3 className="w-6 h-6 lg:w-10 lg:h-10 text-blue-400" />
         Prontidão Operacional
       </h3>
       
       {chartData.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
-           <p className="font-black uppercase tracking-widest opacity-30">Aguardando dados...</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-600">
+           <p className="font-black uppercase tracking-widest opacity-30 text-xs lg:text-xl">Sem dados de prontidão...</p>
         </div>
       ) : (
-        <div className="flex-1">
+        <div className="flex-1 w-full min-h-[350px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={isTv ? 140 : isTablet ? 80 : 60}
-                outerRadius={isTv ? 240 : isTablet ? 140 : 100}
-                paddingAngle={5}
+                innerRadius="60%"
+                outerRadius="90%"
+                paddingAngle={8}
                 dataKey="value"
+                animationDuration={1500}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
@@ -58,17 +52,22 @@ const StatusCharts: React.FC<Props> = ({ data, uiMode = 'desktop' }) => {
                 contentStyle={{ 
                   backgroundColor: '#0f172a', 
                   borderColor: '#334155', 
-                  borderRadius: '20px',
-                  fontSize: isTv ? '24px' : '12px',
-                  color: '#f1f5f9'
+                  borderRadius: '24px',
+                  fontSize: '16px',
+                  color: '#f1f5f9',
+                  borderWidth: '2px',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                 }}
                 itemStyle={{ color: '#f1f5f9', fontWeight: 'bold' }}
               />
               <Legend 
                 verticalAlign="bottom" 
-                height={isTv ? 80 : 36} 
+                align="center"
+                layout="horizontal"
+                iconType="circle"
+                iconSize={16}
                 formatter={(value) => (
-                  <span className={`font-black text-slate-400 uppercase tracking-widest ${isTv ? 'text-xl' : 'text-[10px]'}`}>
+                  <span className="font-black text-slate-400 uppercase tracking-widest text-[12px] lg:text-lg ml-2">
                     {value}
                   </span>
                 )}

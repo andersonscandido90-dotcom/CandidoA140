@@ -39,12 +39,23 @@ export interface PersonnelData {
   supervisorMO: string;
   supervisorEL: string;
   fielCav: string;
-  fielAuxiliares: string[];
-  patrulhaCav: string[];
+  encarregadoMaquinas: string;
+  auxiliares: string[];
+  patrulha: string[];
 }
 
 export interface EquipmentData {
   [name: string]: EquipmentStatus;
+}
+
+// Added LogEntry interface to support activity tracking and fix the import error in ActivityLog.tsx
+export interface LogEntry {
+  id: string;
+  item: string;
+  timestamp: string;
+  oldStatus: EquipmentStatus;
+  newStatus: EquipmentStatus;
+  user?: string;
 }
 
 export interface DailyReport {
@@ -53,6 +64,8 @@ export interface DailyReport {
   fuel: FuelData;
   stability: StabilityData;
   personnel: PersonnelData;
+  // Added optional logs to DailyReport for future integration
+  logs?: LogEntry[];
 }
 
 export interface EquipmentCategory {

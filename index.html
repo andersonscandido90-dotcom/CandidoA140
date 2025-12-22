@@ -10,27 +10,74 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #0f172a;
+        background-color: #020617;
         color: #f1f5f9;
+        overflow-x: hidden;
       }
       .font-mono {
         font-family: 'JetBrains Mono', monospace;
       }
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+      
+      /* Animação de Neve (URA/Frigoríficas) */
+      @keyframes snowfall {
+        0% { transform: translateY(-20px) translateX(0); opacity: 0; }
+        20% { opacity: 0.8; }
+        100% { transform: translateY(180px) translateX(15px); opacity: 0; }
       }
-      ::-webkit-scrollbar-track {
-        background: #1e293b;
+      
+      .snow-particle {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        pointer-events: none;
+        animation: snowfall linear infinite;
+        z-index: 1;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #334155;
-        border-radius: 4px;
+
+      /* Animação de Gota Pingando (Purificadores) */
+      @keyframes drip {
+        0% { transform: translateY(-8px); opacity: 0; }
+        30% { transform: translateY(0); opacity: 1; }
+        70% { transform: translateY(0); opacity: 1; }
+        100% { transform: translateY(15px); opacity: 0; }
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #475569;
+      
+      .animate-drip {
+        animation: drip 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
       }
+
+      /* Animação de Ondas Movendo (Rede de Incêndio/Bombas) */
+      @keyframes wave-move {
+        0% { transform: translateX(-2px) translateY(1px); }
+        50% { transform: translateX(2px) translateY(-1px); }
+        100% { transform: translateX(-2px) translateY(1px); }
+      }
+      
+      .animate-wave-move {
+        animation: wave-move 2s infinite ease-in-out;
+      }
+
+      /* Glow Operacional Verde */
+      @keyframes pulse-glow-green {
+        0% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.4); border-color: rgba(34, 197, 94, 0.6); }
+        50% { box-shadow: 0 0 25px rgba(34, 197, 94, 0.8); border-color: rgba(34, 197, 94, 1); }
+        100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.4); border-color: rgba(34, 197, 94, 0.6); }
+      }
+      
+      .active-glow-green { 
+        animation: pulse-glow-green 2s infinite ease-in-out; 
+      }
+
+      /* Scrollbar Custom */
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #0f172a; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 <script type="importmap">
 {
@@ -39,7 +86,10 @@
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "recharts": "https://esm.sh/recharts@^3.6.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "path": "https://esm.sh/path@^0.12.7",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>

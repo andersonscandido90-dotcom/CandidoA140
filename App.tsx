@@ -1,402 +1,457 @@
-
-import React, { useState, useEffect, memo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Activity, 
   Droplets, 
   LayoutDashboard,
   Calendar,
-  Monitor,
-  Minimize2,
-  Smartphone,
-  Tablet,
   Compass,
-  Upload,
   Users,
   Shield,
-  Wrench,
   UserCheck,
   Menu,
-  X
+  X,
+  AlertTriangle,
+  Camera,
+  Tv,
+  Monitor,
+  Clock as ClockIcon,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid
 } from 'lucide-react';
-import { EquipmentStatus, DailyReport, FuelData, EquipmentData, StabilityData, PersonnelData } from './types';
-import { CATEGORIES, STATUS_CONFIG, SHIP_CONFIG } from './constants';
+import { EquipmentStatus, DailyReport, FuelData, EquipmentData, StabilityData, PersonnelData, LogEntry } from './types';
+import { CATEGORIES, SHIP_CONFIG, STATUS_CONFIG } from './constants';
 import EquipmentSection from './components/EquipmentSection';
 import FuelPanel from './components/FuelPanel';
 import StabilityPanel from './components/StabilityPanel';
-
-type Theme = 'dark' | 'navy' | 'light';
-type UIMode = 'desktop' | 'tv' | 'tablet' | 'phone';
+import StatusCharts from './components/StatusCharts';
+import ActivityLog from './components/ActivityLog';
 
 const DEFAULT_FUEL: FuelData = { 
-  water: 0, 
-  lubOil: 0, 
-  fuelOil: 0, 
-  jp5: 0,
-  maxWater: 800,
-  maxLubOil: 200,
-  maxFuelOil: 500,
-  maxJp5: 300
+  water: 0, lubOil: 0, fuelOil: 0, jp5: 0,
+  maxWater: 570, maxLubOil: 300, maxFuelOil: 3000, maxJp5: 300
 };
 
 const DEFAULT_STABILITY: StabilityData = {
-  draftForward: 0,
-  draftAft: 0,
-  heel: 0,
-  gm: 0,
-  displacement: 0
+  draftForward: 0, draftAft: 0, heel: 0, gm: 0, displacement: 0
 };
 
 const DEFAULT_PERSONNEL: PersonnelData = {
-  supervisorMO: '',
-  supervisorEL: '',
-  fielCav: '',
-  fielAuxiliares: ['', '', ''],
-  patrulhaCav: ['', '', '']
+  supervisorMO: '', supervisorEL: '', fielCav: '',
+  encarregadoMaquinas: '', auxiliares: ['', '', ''], patrulha: ['', '', '']
 };
 
-const ShipLogo = memo(({ className = "w-24 h-auto", customUrl }: { className?: string, customUrl?: string | null }) => (
-  <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
-    <img 
-      src={customUrl || SHIP_CONFIG.badgeUrl} 
-      alt="Logo do Navio" 
-      className="w-full h-full object-contain drop-shadow-2xl"
-      crossOrigin="anonymous"
-      onError={(e) => {
-        e.currentTarget.style.display = 'none';
-        const parent = e.currentTarget.parentElement;
-        if (parent) {
-          const icon = document.createElement('div');
-          icon.className = "p-4 bg-blue-600 rounded-full border-4 border-blue-400";
-          icon.innerHTML = `<svg viewBox="0 0 24 24" width="48" height="48" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`;
-          parent.appendChild(icon);
-        }
-      }}
-    />
-  </div>
-));
+const TV_SLIDES = [
+  { id: 'estabilidade', label: 'Estabilidade', icon: <Compass size={32} /> },
+  { id: 'cargas', label: 'Cargas Líquidas', icon: <Droplets size={32} /> },
+  { id: 'equipamentos', label: 'Equipamentos', icon: <Activity size={32} /> }
+];
 
-interface PersonnelFieldProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  theme: Theme;
-  uiMode?: UIMode;
-}
-
-const PersonnelField: React.FC<PersonnelFieldProps> = ({ icon, label, value, onChange, theme, uiMode = 'desktop' }) => {
-  const isLight = theme === 'light';
-  const isTv = uiMode === 'tv';
-  const isPhone = uiMode === 'phone';
-  
-  return (
-    <div className={`${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-800/30 border-slate-700/40 shadow-inner'} border rounded-2xl ${isTv ? 'p-10' : 'p-4 lg:p-5'} transition-all hover:border-blue-500/50 group`}>
-      <div className={`flex items-center gap-3 ${isTv ? 'mb-6' : 'mb-3'}`}>
-        <div className={`${isLight ? 'bg-slate-100 text-blue-600 border-slate-200' : 'bg-slate-900 text-blue-400 border-slate-800'} ${isTv ? 'p-5 rounded-2xl' : 'p-2 rounded-xl'} group-hover:text-white group-hover:bg-blue-600 transition-colors border`}>
-          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: isTv ? 40 : 18 }) : icon}
-        </div>
-        <span className={`${isTv ? 'text-2xl' : 'text-[10px]'} font-black uppercase tracking-widest leading-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-          {label}
-        </span>
+const PersonnelView: React.FC<{ 
+  data: PersonnelData; 
+  onChange: (key: keyof PersonnelData, value: any) => void 
+}> = ({ data, onChange }) => {
+  const renderField = (label: string, value: string, key: keyof PersonnelData, icon: React.ReactNode) => (
+    <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] flex flex-col gap-4">
+      <div className="flex items-center gap-3 text-blue-400">
+        {icon}
+        <span className="font-black text-xs uppercase tracking-widest text-slate-500">{label}</span>
       </div>
-      <input 
-        type="text" 
-        placeholder="NOME / GRAD"
+      <input
+        type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300' : 'bg-slate-950/50 border-slate-800 text-white placeholder:text-slate-700'} ${isTv ? 'px-8 py-6 text-4xl' : 'px-4 py-3 text-sm font-bold'} placeholder:text-[10px]`}
+        onChange={(e) => onChange(key, e.target.value)}
+        placeholder="NOME COMPLETO..."
+        className="bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 font-black uppercase text-sm text-white focus:border-blue-500 outline-none transition-all"
       />
     </div>
   );
-};
 
-const NavItem: React.FC<{ active: boolean; icon: React.ReactNode; label: string; onClick: () => void; theme: Theme; variant?: 'default' | 'special' }> = ({ active, icon, label, onClick, theme, variant = 'default' }) => {
-  const isLight = theme === 'light';
-  return (
-    <button onClick={onClick} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black transition-all ${
-      active 
-        ? (variant === 'special' ? 'bg-indigo-600 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-900/20') 
-        : (isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-500 hover:bg-slate-800')
-    }`}>
-      {icon} <span className="text-sm uppercase tracking-wider">{label}</span>
-    </button>
+  const renderList = (label: string, list: string[], key: 'auxiliares' | 'patrulha', icon: React.ReactNode) => (
+    <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] flex flex-col gap-6">
+      <div className="flex items-center gap-3 text-blue-400">
+        {icon}
+        <span className="font-black text-xs uppercase tracking-widest text-slate-500">{label}</span>
+      </div>
+      <div className="space-y-3">
+        {list.map((item, idx) => (
+          <input
+            key={idx}
+            type="text"
+            value={item}
+            onChange={(e) => {
+              const newList = [...list];
+              newList[idx] = e.target.value;
+              onChange(key, newList);
+            }}
+            placeholder={`${label.split(' ')[0]} ${idx + 1}...`}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 font-black uppercase text-sm text-white focus:border-blue-500 outline-none transition-all"
+          />
+        ))}
+      </div>
+    </div>
   );
-};
 
-// @fix: Added missing ThemeSelector component to resolve "Cannot find name 'ThemeSelector'" error
-const ThemeSelector: React.FC<{ current: Theme; onSelect: (t: Theme) => void; theme: Theme }> = ({ current, onSelect, theme }) => {
-  const isLight = theme === 'light';
   return (
-    <div className={`flex p-1 rounded-2xl border transition-all ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
-      {(['dark', 'navy', 'light'] as Theme[]).map((t) => (
-        <button
-          key={t}
-          onClick={() => onSelect(t)}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            current === t 
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-              : (isLight ? 'text-slate-400 hover:text-slate-600' : 'text-slate-500 hover:text-slate-300')
-          }`}
-        >
-          {t}
-        </button>
-      ))}
+    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+      <div className="space-y-8">
+        <h3 className="font-black flex items-center gap-4 text-white uppercase text-xl lg:text-2xl mb-6">
+          <Shield className="w-6 h-6 text-blue-400" />
+          Supervisão
+        </h3>
+        {renderField("Supervisor MO", data.supervisorMO, "supervisorMO", <UserCheck size={18} />)}
+        {renderField("Supervisor EL", data.supervisorEL, "supervisorEL", <UserCheck size={18} />)}
+        {renderField("Fiel CAV", data.fielCav, "fielCav", <Shield size={18} />)}
+        {renderField("Encarregado Maquinas", data.encarregadoMaquinas, "encarregadoMaquinas", <Activity size={18} />)}
+      </div>
+      
+      <div className="space-y-8">
+        <h3 className="font-black flex items-center gap-4 text-white uppercase text-xl lg:text-2xl mb-6">
+          <Users className="w-6 h-6 text-blue-400" />
+          Equipe de Serviço
+        </h3>
+        {renderList("Auxiliares", data.auxiliares, "auxiliares", <Users size={18} />)}
+        {renderList("Patrulha", data.patrulha, "patrulha", <Users size={18} />)}
+      </div>
     </div>
   );
 };
 
 const App: React.FC = () => {
-  const [theme, setTheme] = useState<Theme>((localStorage.getItem('app_theme') as Theme) || 'dark');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [equipmentData, setEquipmentData] = useState<EquipmentData>({});
   const [fuelData, setFuelData] = useState<FuelData>(DEFAULT_FUEL);
   const [stabilityData, setStabilityData] = useState<StabilityData>(DEFAULT_STABILITY);
   const [personnelData, setPersonnelData] = useState<PersonnelData>(DEFAULT_PERSONNEL);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [view, setView] = useState<'menu-inicial' | 'equipment' | 'fuel' | 'stability' | 'personnel' | 'tv-mode'>('menu-inicial');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTvSlide, setCurrentTvSlide] = useState(0);
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('custom_ship_logo'));
-  const [view, setView] = useState<'dashboard' | 'equipment' | 'fuel' | 'stability' | 'tv' | 'tablet' | 'smartphone'>('dashboard');
-  const [kioskTab, setKioskTab] = useState<'dashboard' | 'systems' | 'fuel' | 'stability'>('dashboard');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('app_theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const saved = localStorage.getItem(`report_${selectedDate}`);
     if (saved) {
-      const parsed: DailyReport = JSON.parse(saved);
-      setEquipmentData(parsed.equipment || {});
-      setFuelData({ ...DEFAULT_FUEL, ...(parsed.fuel || {}) });
-      setStabilityData({ ...DEFAULT_STABILITY, ...(parsed.stability || {}) });
-      setPersonnelData({ ...DEFAULT_PERSONNEL, ...(parsed.personnel || {}) });
+      try {
+        const data = JSON.parse(saved);
+        setEquipmentData(data.equipment || {});
+        setFuelData(data.fuel || DEFAULT_FUEL);
+        setStabilityData(data.stability || DEFAULT_STABILITY);
+        setPersonnelData(data.personnel || DEFAULT_PERSONNEL);
+        setLogs(data.logs || []);
+      } catch (e) { console.error("Erro ao carregar dados locais"); }
     } else {
       setEquipmentData({});
       setFuelData(DEFAULT_FUEL);
       setStabilityData(DEFAULT_STABILITY);
       setPersonnelData(DEFAULT_PERSONNEL);
+      setLogs([]);
     }
   }, [selectedDate]);
 
-  const saveCurrentData = (newEquip?: EquipmentData, newFuel?: FuelData, newStability?: StabilityData, newPersonnel?: PersonnelData) => {
-    const report: DailyReport = {
+  const saveData = (updates: Partial<DailyReport>) => {
+    const newReport: DailyReport = {
       date: selectedDate,
-      equipment: newEquip || equipmentData,
-      fuel: newFuel || fuelData,
-      stability: newStability || stabilityData,
-      personnel: newPersonnel || personnelData
+      equipment: updates.equipment !== undefined ? updates.equipment : equipmentData,
+      fuel: updates.fuel !== undefined ? updates.fuel : fuelData,
+      stability: updates.stability !== undefined ? updates.stability : stabilityData,
+      personnel: updates.personnel !== undefined ? updates.personnel : personnelData,
+      logs: updates.logs !== undefined ? updates.logs : logs
     };
-    localStorage.setItem(`report_${selectedDate}`, JSON.stringify(report));
-    if (newEquip) setEquipmentData(newEquip);
-    if (newFuel) setFuelData(newFuel);
-    if (newStability) setStabilityData(newStability);
-    if (newPersonnel) setPersonnelData(newPersonnel);
+    
+    if (updates.equipment) setEquipmentData(updates.equipment);
+    if (updates.fuel) setFuelData(updates.fuel);
+    if (updates.stability) setStabilityData(updates.stability);
+    if (updates.personnel) setPersonnelData(updates.personnel);
+    if (updates.logs) setLogs(updates.logs);
+
+    localStorage.setItem(`report_${selectedDate}`, JSON.stringify(newReport));
   };
 
-  const handleStatusChange = (name: string) => {
-    const statusOrder = [EquipmentStatus.AVAILABLE, EquipmentStatus.IN_LINE, EquipmentStatus.IN_SERVICE, EquipmentStatus.RESTRICTED, EquipmentStatus.UNAVAILABLE];
-    const currentStatus = equipmentData[name] || EquipmentStatus.AVAILABLE;
-    const nextIdx = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
-    saveCurrentData({ ...equipmentData, [name]: statusOrder[nextIdx] });
-  };
-
-  const handleFuelChange = (key: keyof FuelData, val: number) => saveCurrentData(undefined, { ...fuelData, [key]: val });
-  const handleStabilityChange = (key: keyof StabilityData, val: number) => saveCurrentData(undefined, undefined, { ...stabilityData, [key]: val });
-  const handlePersonnelChange = (key: keyof PersonnelData, val: any) => saveCurrentData(undefined, undefined, undefined, { ...personnelData, [key]: val });
-
-  const isKioskMode = view === 'tv' || view === 'tablet' || view === 'smartphone';
-  const currentUIMode: UIMode = isKioskMode ? (view === 'tv' ? 'tv' : view === 'tablet' ? 'tablet' : 'phone') : (isMobile ? 'phone' : 'desktop');
-
-  const formatDisplayDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
-  };
-
-  const getThemeClasses = () => {
-    switch(theme) {
-      case 'navy': return 'bg-blue-950 text-white';
-      case 'light': return 'bg-slate-50 text-slate-900';
-      default: return 'bg-slate-950 text-white';
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        localStorage.setItem('custom_ship_logo', base64String);
+        setCustomLogo(base64String);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const renderPersonnelSection = (mode: UIMode) => {
-    const isTv = mode === 'tv';
-    return (
-      <section className={`${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'} border rounded-[2rem] md:rounded-[3rem] ${isTv ? 'p-16' : 'p-6 lg:p-12'} shadow-2xl transition-colors duration-500`}>
-        <div className={`flex items-center gap-6 mb-10 border-b pb-8 ${theme === 'light' ? 'border-slate-100' : 'border-slate-800'}`}>
-          <div className={`${isTv ? 'p-8' : 'p-3 md:p-4'} bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/20`}><Users className={`${isTv ? 'w-16 h-16' : 'w-6 h-6 md:w-8 h-8'} text-white`} /></div>
-          <h3 className={`${isTv ? 'text-7xl' : 'text-2xl md:text-4xl'} font-black uppercase tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Tabela de Serviço</h3>
-        </div>
+  const handleStatusChange = (name: string) => {
+    const statusOrder = [
+      EquipmentStatus.AVAILABLE, 
+      EquipmentStatus.IN_LINE, 
+      EquipmentStatus.IN_SERVICE, 
+      EquipmentStatus.RESTRICTED, 
+      EquipmentStatus.UNAVAILABLE
+    ];
+    const oldStatus = equipmentData[name] || EquipmentStatus.AVAILABLE;
+    const nextIdx = (statusOrder.indexOf(oldStatus) + 1) % statusOrder.length;
+    const nextStatus = statusOrder[nextIdx];
+    
+    // Fix: Corrected variable reference from newStatus to nextStatus in LogEntry object
+    const newLog: LogEntry = {
+      id: Math.random().toString(36).substr(2, 9),
+      item: name,
+      timestamp: new Date().toISOString(),
+      oldStatus,
+      newStatus: nextStatus,
+      user: 'CENTRO DE COMANDO'
+    };
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 mb-8">
-          <PersonnelField uiMode={mode} icon={<Shield />} label="Supervisor MO" value={personnelData.supervisorMO} onChange={(v) => handlePersonnelChange('supervisorMO', v)} theme={theme} />
-          <PersonnelField uiMode={mode} icon={<Shield />} label="Supervisor EL" value={personnelData.supervisorEL} onChange={(v) => handlePersonnelChange('supervisorEL', v)} theme={theme} />
-          <PersonnelField uiMode={mode} icon={<UserCheck />} label="Fiel de Cav" value={personnelData.fielCav} onChange={(v) => handlePersonnelChange('fielCav', v)} theme={theme} />
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <p className={`${isTv ? 'text-2xl mb-8' : 'text-[10px] mb-4'} font-black uppercase tracking-[0.2em] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Fiel Auxiliares</p>
-            <div className={`grid grid-cols-1 ${isTv ? 'gap-8' : 'md:grid-cols-3 gap-4'}`}>
-              {[0,1,2].map(i => (
-                <PersonnelField uiMode={mode} key={i} icon={<Wrench />} label={`Auxiliar ${i+1}`} value={personnelData.fielAuxiliares[i]} onChange={(v) => {
-                  const copy = [...personnelData.fielAuxiliares]; copy[i] = v; handlePersonnelChange('fielAuxiliares', copy);
-                }} theme={theme} />
-              ))}
-            </div>
-          </div>
-          <div className="space-y-4">
-            <p className={`${isTv ? 'text-2xl mb-8' : 'text-[10px] mb-4'} font-black uppercase tracking-[0.2em] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Patrulha Cav</p>
-            <div className={`grid grid-cols-1 ${isTv ? 'gap-8' : 'md:grid-cols-3 gap-4'}`}>
-              {[0,1,2].map(i => (
-                <PersonnelField uiMode={mode} key={i} icon={<Activity />} label={`Patrulha ${i+1}`} value={personnelData.patrulhaCav[i]} onChange={(v) => {
-                  const copy = [...personnelData.patrulhaCav]; copy[i] = v; handlePersonnelChange('patrulhaCav', copy);
-                }} theme={theme} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
+    saveData({ 
+      equipment: { ...equipmentData, [name]: nextStatus },
+      logs: [...logs, newLog]
+    });
   };
 
-  return (
-    <div className={`min-h-screen flex flex-col lg:flex-row ${getThemeClasses()} overflow-x-hidden transition-colors duration-500`}>
-      
-      {!isKioskMode ? (
-        <>
-          <aside className={`w-80 ${theme === 'light' ? 'bg-white border-slate-200' : (theme === 'navy' ? 'bg-blue-900 border-blue-800' : 'bg-slate-900 border-slate-800')} border-r flex flex-col p-8 hidden lg:flex transition-colors duration-500`}>
-            <div className="flex flex-col items-center gap-6 mb-12">
-              <button onClick={() => fileInputRef.current?.click()} className="group relative">
-                <ShipLogo className="w-32 h-auto" customUrl={customLogo} />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl flex items-center justify-center"><Upload className="text-white" /></div>
-              </button>
-              <div className="text-center">
-                <h1 className={`font-black text-2xl ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{SHIP_CONFIG.name}</h1>
-                <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mt-2">ATAQUE CONTÍNUO E AGRESSIVO</p>
-              </div>
-            </div>
-            <nav className="flex-1 space-y-2">
-              <NavItem active={view === 'dashboard'} icon={<LayoutDashboard size={24} />} label="Dashboard" onClick={() => setView('dashboard')} theme={theme} />
-              <NavItem active={view === 'equipment'} icon={<Activity size={24} />} label="Equipamentos" onClick={() => setView('equipment')} theme={theme} />
-              <NavItem active={view === 'fuel'} icon={<Droplets size={24} />} label="Carga Líquida" onClick={() => setView('fuel')} theme={theme} />
-              <NavItem active={view === 'stability'} icon={<Compass size={24} />} label="Estabilidade" onClick={() => setView('stability')} theme={theme} />
-              <div className="pt-8 space-y-4">
-                 <p className={`text-[10px] font-black uppercase tracking-widest px-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-600'}`}>Visualização Tática</p>
-                 <NavItem active={false} icon={<Monitor size={24} />} label="Modo TV" variant="special" onClick={() => setView('tv')} theme={theme} />
-                 <NavItem active={false} icon={<Tablet size={24} />} label="Modo Tablet" variant="special" onClick={() => setView('tablet')} theme={theme} />
-                 <NavItem active={false} icon={<Smartphone size={24} />} label="Modo Celular" variant="special" onClick={() => setView('smartphone')} theme={theme} />
-              </div>
-            </nav>
-          </aside>
+  const nextTvSlide = () => setCurrentTvSlide(prev => (prev + 1) % TV_SLIDES.length);
+  const prevTvSlide = () => setCurrentTvSlide(prev => (prev - 1 + TV_SLIDES.length) % TV_SLIDES.length);
 
-          <main className="flex-1 flex flex-col h-screen overflow-hidden">
-            <header className={`p-6 md:p-8 lg:p-12 ${theme === 'light' ? 'bg-white/80 border-slate-200 text-slate-900' : 'bg-slate-900/40 border-slate-800 text-white'} border-b flex items-center justify-between sticky top-0 z-30 backdrop-blur-xl shrink-0`}>
-               <div className="flex items-center gap-4 md:gap-8">
-                 <ShipLogo className="w-12 md:w-20" customUrl={customLogo} />
-                 <div>
-                   <h2 className={`text-xl md:text-4xl lg:text-5xl font-black ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{SHIP_CONFIG.name}</h2>
-                   <div className="flex items-center gap-2 md:gap-4 mt-1 md:mt-2">
-                     <Calendar className="text-blue-500 w-4 h-4 md:w-5 md:h-5" />
-                     <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className={`px-2 py-1 md:px-4 md:py-1 rounded-lg font-bold border transition-all text-xs md:text-sm ${theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-900 focus:border-blue-500' : 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500'}`} />
-                   </div>
-                 </div>
-               </div>
-               <div className="hidden lg:block">
-                 {/* @fix: Pass required props to ThemeSelector component */}
-                 <ThemeSelector current={theme} onSelect={setTheme} theme={theme} />
-               </div>
-            </header>
+  const formattedSelectedDate = useMemo(() => {
+    const [year, month, day] = selectedDate.split('-');
+    const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }, [selectedDate]);
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 space-y-8 md:space-y-12 pb-24 md:pb-12">
-              {view === 'dashboard' && (
-                <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700">
-                  {renderPersonnelSection(currentUIMode)}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <FuelPanel fuel={fuelData} onChange={handleFuelChange} uiMode={currentUIMode} />
-                    <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode={currentUIMode} />
-                  </div>
-                </div>
-              )}
-              {view === 'equipment' && CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode={currentUIMode} />)}
-              {view === 'fuel' && <FuelPanel fuel={fuelData} onChange={handleFuelChange} fullWidth uiMode={currentUIMode} />}
-              {view === 'stability' && <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode={currentUIMode} />}
-            </div>
-
-            {isMobile && (
-              <div className={`lg:hidden fixed bottom-0 left-0 right-0 ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'} border-t px-6 py-4 flex justify-around items-center z-50 shadow-2xl`}>
-                <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 ${view === 'dashboard' ? 'text-blue-500' : 'text-slate-500'}`}>
-                  <LayoutDashboard size={24} /> <span className="text-[10px] font-black uppercase">Início</span>
-                </button>
-                <button onClick={() => setView('equipment')} className={`flex flex-col items-center gap-1 ${view === 'equipment' ? 'text-blue-500' : 'text-slate-500'}`}>
-                  <Activity size={24} /> <span className="text-[10px] font-black uppercase">Equips</span>
-                </button>
-                <button onClick={() => setView('fuel')} className={`flex flex-col items-center gap-1 ${view === 'fuel' ? 'text-blue-500' : 'text-slate-500'}`}>
-                  <Droplets size={24} /> <span className="text-[10px] font-black uppercase">Cargas</span>
-                </button>
-                <button onClick={() => setView('stability')} className={`flex flex-col items-center gap-1 ${view === 'stability' ? 'text-blue-500' : 'text-slate-500'}`}>
-                  <Compass size={24} /> <span className="text-[10px] font-black uppercase">Estab</span>
-                </button>
-              </div>
-            )}
-          </main>
-        </>
-      ) : (
-        <div className={`fixed inset-0 ${getThemeClasses()} overflow-hidden flex flex-col transition-colors duration-500`}>
-          <header className={`flex flex-col gap-6 ${currentUIMode === 'tv' ? 'p-16' : currentUIMode === 'tablet' ? 'p-10' : 'p-6'} ${theme === 'light' ? 'bg-white/80 border-slate-200' : 'bg-slate-900/50 border-slate-800'} border-b-4 backdrop-blur-md`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-6 lg:gap-12">
-                <ShipLogo className={currentUIMode === 'tv' ? 'w-56' : currentUIMode === 'tablet' ? 'w-32' : 'w-20'} customUrl={customLogo} />
-                <div>
-                  <h1 className={`${currentUIMode === 'tv' ? 'text-9xl' : currentUIMode === 'tablet' ? 'text-6xl' : 'text-3xl'} font-black tracking-tighter leading-none`}>
-                    {SHIP_CONFIG.name} <span className="text-blue-500">{SHIP_CONFIG.hullNumber}</span>
-                  </h1>
-                  <p className="text-blue-400 font-black uppercase tracking-[0.2em] mt-4">ATAQUE CONTÍNUO E AGRESSIVO</p>
+  if (view === 'tv-mode') {
+    return (
+      <div className="fixed inset-0 bg-slate-950 text-white flex flex-col overflow-hidden">
+        <div className="relative z-50 bg-slate-900 border-b-8 border-blue-600 shadow-2xl">
+          <div className="p-10 lg:p-14 flex justify-between items-center">
+            <div className="flex items-center gap-12">
+              <img src={customLogo || SHIP_CONFIG.badgeUrl} className="h-32 lg:h-48 w-auto" alt="Logo" />
+              <div>
+                <h1 className="text-7xl lg:text-9xl font-black tracking-tighter uppercase leading-none">{SHIP_CONFIG.name}</h1>
+                <div className="flex items-center gap-8 mt-6">
+                  <span className="bg-blue-600 text-white px-10 py-3 rounded-2xl font-black text-4xl uppercase shadow-lg">{SHIP_CONFIG.hullNumber}</span>
+                  <span className="text-slate-400 font-bold text-3xl uppercase tracking-[0.4em]">{SHIP_CONFIG.designation}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <button onClick={() => setView('dashboard')} className="p-4 md:p-6 rounded-2xl md:rounded-[2rem] bg-red-600/10 border-2 border-red-600/30 text-red-500 font-black flex items-center gap-2 md:gap-4 hover:bg-red-600/20 transition-all">
-                  <Minimize2 className={currentUIMode === 'tv' ? 'w-20 h-20' : 'w-6 h-6 md:w-10 md:h-10'} /> {currentUIMode !== 'phone' && 'SAIR'}
-                </button>
+            </div>
+            <div className="text-right bg-slate-950/50 p-8 rounded-[3rem] border border-white/5 shadow-inner">
+              <div className="text-3xl font-black text-blue-500 uppercase tracking-[0.3em] mb-4">
+                Data do Serviço
+              </div>
+              <div className="text-6xl lg:text-8xl font-black text-white uppercase tracking-tighter leading-none">
+                {formattedSelectedDate}
               </div>
             </div>
-            <div className="flex gap-2 md:gap-4 mt-2 overflow-x-auto pb-2 scrollbar-hide">
-              {['dashboard', 'systems', 'fuel', 'stability'].map((tab) => (
-                <button key={tab} onClick={() => setKioskTab(tab as any)} className={`flex-1 min-w-[100px] md:min-w-[150px] ${currentUIMode === 'tv' ? 'text-5xl py-12' : currentUIMode === 'tablet' ? 'text-2xl py-6' : 'text-xs md:text-sm py-3'} rounded-[1.5rem] md:rounded-[3rem] border-2 font-black uppercase transition-all ${kioskTab === tab ? 'bg-blue-600 border-blue-400 text-white' : (theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-800 border-slate-700 text-slate-500')}`}>
-                  {tab === 'dashboard' ? 'Serviço' : tab === 'systems' ? 'Equips' : tab === 'fuel' ? 'Cargas' : 'Estab'}
-                </button>
-              ))}
-            </div>
-          </header>
-          <div className={`flex-1 overflow-y-auto ${currentUIMode === 'tv' ? 'p-20' : 'p-4 md:p-12'}`}>
-            {kioskTab === 'dashboard' && renderPersonnelSection(currentUIMode)}
-            {kioskTab === 'systems' && <div className="space-y-8 md:space-y-12">{CATEGORIES.map(cat => <EquipmentSection key={cat.name} category={cat} data={equipmentData} onStatusChange={handleStatusChange} uiMode={currentUIMode} />)}</div>}
-            {kioskTab === 'fuel' && <FuelPanel fuel={fuelData} onChange={handleFuelChange} fullWidth uiMode={currentUIMode} />}
-            {kioskTab === 'stability' && <StabilityPanel data={stabilityData} onChange={handleStabilityChange} uiMode={currentUIMode} />}
           </div>
         </div>
-      )}
 
-      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64 = reader.result as string;
-            setCustomLogo(base64);
-            localStorage.setItem('custom_ship_logo', base64);
-          };
-          reader.readAsDataURL(file);
-        }
-      }} />
+        <div className="flex-1 relative overflow-hidden flex flex-col">
+          <button 
+            onClick={prevTvSlide}
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-40 p-10 bg-slate-900/80 hover:bg-blue-600 rounded-full border-4 border-slate-700 transition-all text-white/50 hover:text-white shadow-2xl"
+          >
+            <ChevronLeft size={80} />
+          </button>
+          
+          <button 
+            onClick={nextTvSlide}
+            className="absolute right-6 top-1/2 -translate-y-1/2 z-40 p-10 bg-slate-900/80 hover:bg-blue-600 rounded-full border-4 border-slate-700 transition-all text-white/50 hover:text-white shadow-2xl"
+          >
+            <ChevronRight size={80} />
+          </button>
+
+          <div className="flex-1 p-10 lg:p-14 overflow-y-auto custom-scrollbar">
+            {currentTvSlide === 0 && (
+              <div className="h-full space-y-10 animate-in fade-in zoom-in-95 duration-500">
+                <h2 className="text-7xl font-black uppercase text-blue-400 flex items-center gap-6">
+                  <Compass size={60} /> Estabilidade e Calados
+                </h2>
+                <StabilityPanel data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+              </div>
+            )}
+
+            {currentTvSlide === 1 && (
+              <div className="h-full space-y-10 animate-in fade-in zoom-in-95 duration-500">
+                <h2 className="text-7xl font-black uppercase text-blue-400 flex items-center gap-6">
+                  <Droplets size={60} /> Cargas Líquidas
+                </h2>
+                <FuelPanel fuel={fuelData} fullWidth onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
+              </div>
+            )}
+
+            {currentTvSlide === 2 && (
+              <div className="h-full space-y-10 pb-20 animate-in fade-in zoom-in-95 duration-500">
+                <h2 className="text-7xl font-black uppercase text-blue-400 flex items-center gap-6">
+                  <Activity size={60} /> Status de Equipamentos
+                </h2>
+                <EquipmentSection 
+                  categories={CATEGORIES} 
+                  data={equipmentData} 
+                  onStatusChange={handleStatusChange} 
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-900 border-t-8 border-slate-800 p-8 flex justify-center gap-8 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+            {TV_SLIDES.map((slide, index) => (
+              <button
+                key={slide.id}
+                onClick={() => setCurrentTvSlide(index)}
+                className={`flex items-center gap-6 px-14 py-8 rounded-[3rem] font-black uppercase text-2xl transition-all border-4 ${currentTvSlide === index ? 'bg-blue-600 border-white text-white shadow-[0_0_40px_rgba(37,99,235,0.6)] scale-110' : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600'}`}
+              >
+                {slide.icon}
+                {slide.label}
+              </button>
+            ))}
+            <div className="w-px h-16 bg-slate-800 mx-6 self-center" />
+            <button 
+              onClick={() => setView('menu-inicial')}
+              className="px-14 py-8 bg-red-600/20 hover:bg-red-600 border-4 border-red-600/50 rounded-[3rem] text-red-500 hover:text-white text-2xl font-black uppercase flex items-center gap-6 transition-all"
+            >
+              <Monitor size={48} /> SAIR
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex bg-slate-950 text-slate-100 selection:bg-blue-600">
+      <button 
+        onClick={() => setSidebarOpen(!sidebarOpen)} 
+        className="lg:hidden fixed bottom-6 right-6 z-[60] p-5 bg-blue-600 rounded-full shadow-[0_0_40px_rgba(37,99,235,0.6)] active:scale-90 transition-transform"
+      >
+        {sidebarOpen ? <X size={32} /> : <Menu size={32} />}
+      </button>
+
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:w-80 bg-slate-900 border-r border-slate-800 transform transition-transform duration-500 ease-in-out lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 lg:p-8 flex flex-col h-full">
+          <div className="flex flex-col items-center mb-10 group">
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              title="Clique para alterar o brasão"
+            >
+              <img 
+                src={customLogo || SHIP_CONFIG.badgeUrl} 
+                className="w-24 lg:w-28 h-auto drop-shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all duration-300 group-hover:scale-105 group-hover:brightness-125" 
+                alt="Logo" 
+              />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-blue-600/80 p-2 rounded-full">
+                  <Camera size={20} className="text-white" />
+                </div>
+              </div>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleLogoUpload} 
+              className="hidden" 
+              accept="image/*" 
+            />
+            
+            <h1 className="font-black text-xl lg:text-2xl mt-5 text-center leading-tight tracking-tighter">{SHIP_CONFIG.name}</h1>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mt-2 bg-blue-500/10 px-4 py-1.5 rounded-full border border-blue-500/20">{SHIP_CONFIG.hullNumber}</span>
+          </div>
+
+          <nav className="flex-1 space-y-2">
+            {[
+              { id: 'menu-inicial', icon: <LayoutDashboard size={20} />, label: 'Menu inicial' },
+              { id: 'equipment', icon: <Activity size={20} />, label: 'Equipamentos' },
+              { id: 'fuel', icon: <Droplets size={20} />, label: 'Cargas' },
+              { id: 'stability', icon: <Compass size={20} />, label: 'Estabilidade' },
+              { id: 'personnel', icon: <Users size={20} />, label: 'Quadro' }
+            ].map(item => (
+              <button 
+                key={item.id} 
+                onClick={() => { setView(item.id as any); setSidebarOpen(false); }} 
+                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-xs transition-all ${view === item.id ? 'bg-blue-600 text-white shadow-[0_10px_30px_rgba(37,99,235,0.3)]' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'}`}
+              >
+                {item.icon} {item.label}
+              </button>
+            ))}
+            
+            <div className="pt-4 border-t border-slate-800 mt-4">
+              <button 
+                onClick={() => { setView('tv-mode'); setSidebarOpen(false); }} 
+                className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-xs bg-slate-950 text-blue-400 border border-blue-900/30 hover:bg-blue-600 hover:text-white transition-all shadow-lg"
+              >
+                <Tv size={20} /> Modo TV (Totem)
+              </button>
+            </div>
+          </nav>
+        </div>
+      </aside>
+
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header className="px-5 lg:px-12 py-5 lg:py-8 border-b border-slate-800/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/80 backdrop-blur-md z-30">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-8 w-full sm:w-auto">
+            <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter text-white drop-shadow-sm">
+              {view === 'menu-inicial' ? 'Menu Inicial' : 
+               view === 'equipment' ? 'Equipamentos' : 
+               view === 'fuel' ? 'Cargas Líquidas' : 
+               view === 'stability' ? 'Estabilidade' : 
+               view === 'personnel' ? 'Quadro de Serviço' : ''}
+            </h2>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="bg-slate-900 border border-slate-800 px-3 lg:px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-inner">
+                <Calendar size={18} className="text-blue-500" />
+                <input 
+                  type="date" 
+                  value={selectedDate} 
+                  onChange={e => setSelectedDate(e.target.value)} 
+                  className="bg-transparent font-black outline-none text-white text-sm lg:text-base cursor-pointer" 
+                />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4 lg:p-12 space-y-8 lg:space-y-12 pb-32 lg:pb-12 scroll-smooth custom-scrollbar">
+          {view === 'menu-inicial' && (
+            <div className="animate-in fade-in duration-500 space-y-12">
+               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12">
+                  <FuelPanel fuel={fuelData} onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
+                  <StabilityPanel data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+               </div>
+               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12 min-h-[500px]">
+                  <StatusCharts data={equipmentData} />
+                  <ActivityLog logs={logs} />
+               </div>
+            </div>
+          )}
+
+          {view === 'equipment' && (
+            <EquipmentSection 
+              categories={CATEGORIES} 
+              data={equipmentData} 
+              onStatusChange={handleStatusChange} 
+            />
+          )}
+
+          {view === 'fuel' && (
+            <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
+              <FuelPanel fuel={fuelData} fullWidth onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
+            </div>
+          )}
+
+          {view === 'stability' && (
+            <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
+              <StabilityPanel data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+            </div>
+          )}
+
+          {view === 'personnel' && (
+            <PersonnelView 
+              data={personnelData} 
+              onChange={(k, v) => saveData({ personnel: { ...personnelData, [k as keyof PersonnelData]: v } })} 
+            />
+          )}
+        </div>
+      </main>
     </div>
   );
 };

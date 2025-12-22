@@ -1,5 +1,5 @@
 {
-  "name": "Copy of Atlântico Command - Sistema de Gestão de Navio",
+  "name": "Candido CCM",
   "description": "Uma plataforma avançada para monitoramento de status de equipamentos navais, carga líquida e telemetria operacional com análise em tempo real.",
   "requestFramePermissions": [
     "geolocation"
