@@ -50,7 +50,7 @@ const SnowLayer: React.FC = () => {
 };
 
 const EquipmentSection: React.FC<Props> = ({ categories, data, onStatusChange }) => {
-  const getIcon = (name: string, status: EquipmentStatus) => {
+  const getIcon = (name: string, status: EquipmentStatus, isMobile: boolean) => {
     const isRunning = status === EquipmentStatus.IN_LINE || status === EquipmentStatus.IN_SERVICE;
     const isUnavailable = status === EquipmentStatus.UNAVAILABLE;
     
@@ -80,7 +80,7 @@ const EquipmentSection: React.FC<Props> = ({ categories, data, onStatusChange })
     }
 
     const props = {
-      size: 32, // Aumentado de 24 para 32
+      size: isMobile ? 20 : 32,
       className: `transition-all duration-700 ${!isUnavailable ? 'opacity-100' : 'opacity-40'} ${animationClass}`
     };
 
@@ -108,28 +108,30 @@ const EquipmentSection: React.FC<Props> = ({ categories, data, onStatusChange })
 
   const getNameSizeClass = (name: string) => {
     const len = name.length;
-    // Lógica de escala mais agressiva para ocupar o espaço
-    if (len <= 5) return 'text-4xl sm:text-5xl lg:text-7xl';
-    if (len <= 10) return 'text-3xl sm:text-4xl lg:text-5xl';
-    if (len <= 18) return 'text-2xl sm:text-3xl lg:text-4xl';
-    return 'text-xl sm:text-2xl lg:text-3xl';
+    // Mobile first sizing
+    if (len <= 5) return 'text-2xl xs:text-3xl sm:text-5xl lg:text-7xl';
+    if (len <= 10) return 'text-lg xs:text-xl sm:text-4xl lg:text-5xl';
+    if (len <= 18) return 'text-base xs:text-lg sm:text-3xl lg:text-4xl';
+    return 'text-sm xs:text-base sm:text-2xl lg:text-3xl';
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 lg:space-y-10">
       {categories.map(category => {
         const items = category.items;
         const isCoolingCategory = category.name.includes('Climatização') || category.name.includes('Planta Frigorífica');
 
         return (
-          <div key={category.name} className="bg-slate-900/60 border border-slate-700/50 shadow-2xl backdrop-blur-md rounded-[2rem] lg:rounded-[3rem] p-6 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h4 className="font-black text-white uppercase tracking-widest mb-8 lg:mb-12 text-xl lg:text-3xl flex items-center gap-4">
-              <div className="w-2.5 h-2.5 lg:w-4 lg:h-4 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]" />
-              {category.name}
-              <span className="text-xs font-bold text-slate-500 ml-auto bg-slate-950 px-3 py-1 rounded-full">{items.length} ITENS</span>
-            </h4>
+          <div key={category.name} className="bg-slate-900/60 border border-slate-700/50 shadow-2xl backdrop-blur-md rounded-[1.5rem] lg:rounded-[3rem] p-4 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center mb-6 lg:mb-12 gap-3">
+              <h4 className="font-black text-white uppercase tracking-widest text-sm sm:text-lg lg:text-3xl flex items-center gap-3">
+                <div className="w-2 h-2 lg:w-4 lg:h-4 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)] shrink-0" />
+                <span className="truncate">{category.name}</span>
+              </h4>
+              <span className="text-[8px] sm:text-xs font-bold text-slate-500 bg-slate-950 px-3 py-1 rounded-full whitespace-nowrap">{items.length} ITENS</span>
+            </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
               {items.map((item) => {
                 const status = data[item] || EquipmentStatus.AVAILABLE;
                 const config = STATUS_CONFIG[status];
@@ -140,34 +142,34 @@ const EquipmentSection: React.FC<Props> = ({ categories, data, onStatusChange })
                   <button 
                     key={item}
                     onClick={() => onStatusChange(item)}
-                    className={`relative transition-all duration-300 border-[3px] lg:border-[4px] rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-6 flex flex-col justify-between min-h-[180px] lg:min-h-[260px] text-left overflow-hidden 
+                    className={`relative transition-all duration-300 border-2 sm:border-[3px] lg:border-[4px] rounded-xl sm:rounded-[1.5rem] lg:rounded-[2.5rem] p-3 sm:p-4 lg:p-6 flex flex-col justify-between min-h-[140px] sm:min-h-[180px] lg:min-h-[260px] text-left overflow-hidden 
                       ${config.bgColor} ${config.textColor} ${config.borderColor} 
-                      active:scale-95 hover:brightness-110 shadow-xl
+                      active:scale-95 hover:brightness-110 shadow-lg
                       ${status === EquipmentStatus.IN_LINE ? 'active-glow-green' : ''}
                     `}
                   >
                     {showSnow && <SnowLayer />}
 
-                    <div className="flex justify-between items-start relative z-10 w-full">
-                      <span className="font-black uppercase opacity-90 text-sm lg:text-xl bg-black/40 px-4 py-2 rounded-xl border border-white/10 shadow-lg">
+                    <div className="flex justify-between items-start relative z-10 w-full mb-2">
+                      <span className="font-black uppercase opacity-90 text-[8px] sm:text-xs lg:text-xl bg-black/40 px-2 py-1 sm:px-4 sm:py-2 rounded-lg lg:rounded-xl border border-white/10 shadow-lg">
                         #{EQUIPMENT_LOCATIONS[item] || '??'}
                       </span>
-                      <div className="bg-white/10 p-2 rounded-2xl">
-                        {getIcon(item, status)}
+                      <div className="bg-white/10 p-1 lg:p-2 rounded-lg lg:rounded-2xl shrink-0">
+                        {getIcon(item, status, true)}
                       </div>
                     </div>
 
                     <div className="relative z-10 mt-auto w-full">
-                      <span className={`font-black uppercase leading-[0.85] block tracking-tighter drop-shadow-md ${getNameSizeClass(item)}`}>
+                      <span className={`font-black uppercase leading-[0.9] block tracking-tighter drop-shadow-md ${getNameSizeClass(item)}`}>
                         {item}
                       </span>
-                      <div className="mt-4 lg:mt-6 flex justify-between items-center border-t border-white/20 pt-4">
-                        <span className="text-[11px] lg:text-[14px] font-black uppercase tracking-[0.15em] opacity-90 drop-shadow-sm">
+                      <div className="mt-2 sm:mt-4 lg:mt-6 flex justify-between items-center border-t border-white/20 pt-2 lg:pt-4">
+                        <span className="text-[7px] sm:text-[11px] lg:text-[14px] font-black uppercase tracking-widest opacity-90 drop-shadow-sm truncate mr-1">
                           {status !== EquipmentStatus.UNAVAILABLE ? config.label : 'INDISP.'}
                         </span>
                         {isRunning && (
-                          <div className="bg-white/20 p-1.5 rounded-full">
-                            <Power size={18} className="animate-pulse text-white" />
+                          <div className="bg-white/20 p-1 lg:p-1.5 rounded-full shrink-0">
+                            <Power size={12} className="animate-pulse text-white sm:w-[18px] sm:h-[18px]" />
                           </div>
                         )}
                       </div>
