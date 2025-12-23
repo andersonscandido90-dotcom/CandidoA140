@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
-  ClipboardList
+  ClipboardList,
+  Clock
 } from 'lucide-react';
 import { EquipmentStatus, DailyReport, FuelData, EquipmentData, StabilityData, PersonnelData, LogEntry } from './types';
 import { CATEGORIES, SHIP_CONFIG, STATUS_CONFIG } from './constants';
@@ -48,6 +49,8 @@ const PersonnelView: React.FC<{
   data: PersonnelData; 
   onChange: (key: keyof PersonnelData, value: any) => void 
 }> = ({ data, onChange }) => {
+  const shifts = ["08:00 às 12:00", "12:00 às 16:00", "16:00 às 20:00"];
+
   const renderField = (label: string, value: string, key: keyof PersonnelData, icon: React.ReactNode) => (
     <div className="bg-slate-900 border border-slate-800 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col gap-4">
       <div className="flex items-center gap-3 text-blue-400">
@@ -64,26 +67,31 @@ const PersonnelView: React.FC<{
     </div>
   );
 
-  const renderList = (label: string, list: string[], key: 'auxiliares' | 'patrulha', icon: React.ReactNode) => (
+  const renderShiftList = (label: string, list: string[], key: 'auxiliares' | 'patrulha', icon: React.ReactNode) => (
     <div className="bg-slate-900 border border-slate-800 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col gap-4 sm:gap-6">
       <div className="flex items-center gap-3 text-blue-400">
         {icon}
         <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest text-slate-500">{label}</span>
       </div>
-      <div className="space-y-2 sm:space-y-3">
+      <div className="space-y-4">
         {list.map((item, idx) => (
-          <input
-            key={idx}
-            type="text"
-            value={item}
-            onChange={(e) => {
-              const newList = [...list];
-              newList[idx] = e.target.value;
-              onChange(key, newList);
-            }}
-            placeholder={`${label.split(' ')[0]} ${idx + 1}...`}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 font-black uppercase text-xs sm:text-sm text-white focus:border-blue-500 outline-none transition-all"
-          />
+          <div key={idx} className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 ml-1">
+              <Clock size={10} className="text-slate-600" />
+              <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{shifts[idx] || `Turno ${idx + 1}`}</span>
+            </div>
+            <input
+              type="text"
+              value={item}
+              onChange={(e) => {
+                const newList = [...list];
+                newList[idx] = e.target.value;
+                onChange(key, newList);
+              }}
+              placeholder={`NOME DO ${label.split(' ')[0].toUpperCase()}...`}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 font-black uppercase text-xs sm:text-sm text-white focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -105,10 +113,10 @@ const PersonnelView: React.FC<{
       <div className="space-y-6 sm:space-y-8">
         <h3 className="font-black flex items-center gap-4 text-white uppercase text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6">
           <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-          Equipe de Serviço
+          Escalas de Serviço
         </h3>
-        {renderList("Auxiliares", data.auxiliares, "auxiliares", <Users size={18} />)}
-        {renderList("Patrulha", data.patrulha, "patrulha", <Users size={18} />)}
+        {renderShiftList("Auxiliares de Serviço", data.auxiliares, "auxiliares", <Users size={18} />)}
+        {renderShiftList("Patrulhas de Serviço", data.patrulha, "patrulha", <Shield size={18} />)}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { FuelData } from '../types';
-import { Droplet, Waves, Thermometer, FlaskConical, LucideIcon } from 'lucide-react';
+import { Droplet, Waves, Helicopter, LucideIcon, Cog, AlertCircle } from 'lucide-react';
 
 interface Props {
   fuel: FuelData;
@@ -21,12 +21,21 @@ const FuelPanel: React.FC<Props> = ({ fuel, onChange, fullWidth }) => {
     accentColor: string;
   }[] = [
     { key: 'water', maxKey: 'maxWater', label: 'Água Doce', icon: Waves, unit: 'm³', color: 'bg-blue-500', shadowColor: 'shadow-blue-500/20', accentColor: 'text-blue-400' },
-    { key: 'lubOil', maxKey: 'maxLubOil', label: 'Óleo Lub.', icon: Thermometer, unit: 'm³', color: 'bg-yellow-500', shadowColor: 'shadow-yellow-500/20', accentColor: 'text-yellow-400' },
+    { key: 'lubOil', maxKey: 'maxLubOil', label: 'Óleo Lub.', icon: Cog, unit: 'm³', color: 'bg-amber-600', shadowColor: 'shadow-amber-600/20', accentColor: 'text-amber-500' },
     { key: 'fuelOil', maxKey: 'maxFuelOil', label: 'Óleo Comb.', icon: Droplet, unit: 'm³', color: 'bg-slate-400', shadowColor: 'shadow-slate-400/20', accentColor: 'text-slate-300' },
-    { key: 'jp5', maxKey: 'maxJp5', label: 'JP-5 (AV)', icon: FlaskConical, unit: 'm³', color: 'bg-indigo-500', shadowColor: 'shadow-indigo-500/20', accentColor: 'text-indigo-400' },
+    { key: 'jp5', maxKey: 'maxJp5', label: 'JP-5 (AV)', icon: Helicopter, unit: 'm³', color: 'bg-indigo-500', shadowColor: 'shadow-indigo-500/20', accentColor: 'text-indigo-400' },
   ];
 
   const totalVolume = fuel.water + fuel.lubOil + fuel.fuelOil + fuel.jp5;
+
+  const handleValueChange = (key: keyof FuelData, maxKey: keyof FuelData, value: number) => {
+    const max = fuel[maxKey] || 0;
+    // Bloqueia se o valor for maior que o máximo
+    if (value > max) {
+      return; // Não faz nada (bloqueia a entrada)
+    }
+    onChange(key, value);
+  };
 
   return (
     <div className={`bg-slate-900/40 border border-slate-800 shadow-2xl rounded-[1.5rem] sm:rounded-[3rem] lg:rounded-[4rem] p-5 sm:p-8 lg:p-12 backdrop-blur-xl ${fullWidth ? 'w-full' : ''}`}>
@@ -56,9 +65,10 @@ const FuelPanel: React.FC<Props> = ({ fuel, onChange, fullWidth }) => {
           const currentVal = fuel[item.key];
           const percentage = Math.min((currentVal / maxValue) * 100, 100);
           const Icon = item.icon;
+          const isFull = currentVal >= maxValue;
           
           return (
-            <div key={item.key} className="bg-slate-950/60 border-2 border-slate-800/50 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 lg:p-10 flex flex-col gap-6 sm:gap-8 group hover:border-blue-500/30 transition-all duration-500 relative overflow-hidden">
+            <div key={item.key} className={`bg-slate-950/60 border-2 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 lg:p-10 flex flex-col gap-6 sm:gap-8 group transition-all duration-500 relative overflow-hidden ${isFull ? 'border-blue-500/50' : 'border-slate-800/50 hover:border-blue-500/30'}`}>
               <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none hidden sm:block">
                 <Icon size={200} />
               </div>
@@ -71,7 +81,7 @@ const FuelPanel: React.FC<Props> = ({ fuel, onChange, fullWidth }) => {
                   <div className="min-w-0">
                     <h4 className="font-black text-white uppercase tracking-widest text-sm sm:text-lg lg:text-2xl mb-1 truncate">{item.label}</h4>
                     <div className="flex items-center gap-1 sm:gap-2">
-                      <span className="text-[7px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">MAX:</span>
+                      <span className="text-[7px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">CAPACIDADE:</span>
                       <input 
                         type="number" 
                         value={fuel[item.maxKey]}
@@ -84,7 +94,7 @@ const FuelPanel: React.FC<Props> = ({ fuel, onChange, fullWidth }) => {
                 </div>
                 
                 <div className="bg-slate-900/80 border border-slate-800 px-3 py-1.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-2xl flex flex-col items-center justify-center min-w-[60px] sm:min-w-[100px] shadow-inner shrink-0">
-                  <span className={`font-black text-lg sm:text-3xl lg:text-4xl tracking-tighter ${percentage > 90 ? 'text-blue-400' : percentage < 15 ? 'text-red-500' : 'text-white'}`}>
+                  <span className={`font-black text-lg sm:text-3xl lg:text-4xl tracking-tighter ${percentage >= 100 ? 'text-blue-400' : percentage < 15 ? 'text-red-500' : 'text-white'}`}>
                     {percentage.toFixed(0)}%
                   </span>
                   <span className="text-[7px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest">NÍVEL</span>
@@ -96,13 +106,20 @@ const FuelPanel: React.FC<Props> = ({ fuel, onChange, fullWidth }) => {
                   <input 
                     type="number" 
                     value={currentVal}
-                    onChange={(e) => onChange(item.key, parseFloat(e.target.value) || 0)}
-                    className="bg-transparent font-black text-white w-full focus:outline-none tracking-tighter text-4xl sm:text-7xl lg:text-9xl hover:text-blue-400 focus:text-blue-400 transition-colors"
+                    max={maxValue}
+                    onChange={(e) => handleValueChange(item.key, item.maxKey, parseFloat(e.target.value) || 0)}
+                    className={`bg-transparent font-black w-full focus:outline-none tracking-tighter text-4xl sm:text-7xl lg:text-9xl transition-colors ${isFull ? 'text-blue-400' : 'text-white hover:text-blue-400 focus:text-blue-400'}`}
                   />
                   <span className="text-slate-500 font-black uppercase tracking-widest text-sm sm:text-2xl lg:text-4xl shrink-0">
                     {item.unit}
                   </span>
                 </div>
+                {currentVal >= maxValue && (
+                   <div className="flex items-center gap-2 text-blue-400 animate-pulse mt-1">
+                      <AlertCircle size={14} />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Capacidade Máxima Atingida</span>
+                   </div>
+                )}
               </div>
               
               <div className="relative z-10 mt-auto space-y-3 sm:space-y-4">
@@ -116,11 +133,11 @@ const FuelPanel: React.FC<Props> = ({ fuel, onChange, fullWidth }) => {
                 </div>
                 <div className="flex justify-between items-center px-1 sm:px-2">
                   <span className={`font-black uppercase tracking-widest text-[7px] sm:text-[10px] lg:text-xs ${percentage < 15 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>
-                    {percentage < 15 ? '⚠ CRÍTICO' : 'OPERACIONAL'}
+                    {percentage < 15 ? '⚠ CRÍTICO' : isFull ? 'LIMITE MÁXIMO' : 'OPERACIONAL'}
                   </span>
                   <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
-                    <span className="text-slate-600 font-black text-[7px] sm:text-[9px] uppercase tracking-widest">REAL-TIME</span>
+                    <span className="text-slate-600 font-black text-[7px] sm:text-[9px] uppercase tracking-widest">REAL-TIME VALIDATION</span>
                   </div>
                 </div>
               </div>
