@@ -1,3 +1,4 @@
+
 import { EquipmentStatus, StatusConfig, EquipmentCategory } from './types';
 
 export const STATUS_CONFIG: Record<EquipmentStatus, StatusConfig> = {
@@ -105,10 +106,10 @@ export const EQUIPMENT_LOCATIONS: Record<string, string> = {
   "Purificador Redutora 1": "9K",
   "Purificador Redutora 2": "9K",
   "Purificador Óleo Lub GER Diesel": "9K",
-  "Maquina do Leme BE 1": "9T",
-  "Maquina do Leme BE 2": "9T",
-  "Maquina do Leme BB 1": "9T",
-  "Maquina do Leme BB 2": "9T",
+  "Maquina do Leme BE 1": "7T",
+  "Maquina do Leme BE 2": "7T",
+  "Maquina do Leme BB 1": "7T",
+  "Maquina do Leme BB 2": "7T",
   "HPSW 1": "9D",
   "HPSW 2": "9F",
   "HPSW 3": "9H",

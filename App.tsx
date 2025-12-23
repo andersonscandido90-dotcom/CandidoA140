@@ -18,7 +18,8 @@ import {
   Clock as ClockIcon,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  ShieldAlert
 } from 'lucide-react';
 import { EquipmentStatus, DailyReport, FuelData, EquipmentData, StabilityData, PersonnelData, LogEntry } from './types';
 import { CATEGORIES, SHIP_CONFIG, STATUS_CONFIG } from './constants';
@@ -27,6 +28,7 @@ import FuelPanel from './components/FuelPanel';
 import StabilityPanel from './components/StabilityPanel';
 import StatusCharts from './components/StatusCharts';
 import ActivityLog from './components/ActivityLog';
+import CAVPanel from './components/CAVPanel';
 
 const DEFAULT_FUEL: FuelData = { 
   water: 0, lubOil: 0, fuelOil: 0, jp5: 0,
@@ -45,7 +47,8 @@ const DEFAULT_PERSONNEL: PersonnelData = {
 const TV_SLIDES = [
   { id: 'estabilidade', label: 'Estabilidade', icon: <Compass size={32} /> },
   { id: 'cargas', label: 'Cargas Líquidas', icon: <Droplets size={32} /> },
-  { id: 'equipamentos', label: 'Equipamentos', icon: <Activity size={32} /> }
+  { id: 'equipamentos', label: 'Equipamentos', icon: <Activity size={32} /> },
+  { id: 'cav', label: 'CAV', icon: <ShieldAlert size={32} /> }
 ];
 
 const PersonnelView: React.FC<{ 
@@ -125,7 +128,7 @@ const App: React.FC = () => {
   const [stabilityData, setStabilityData] = useState<StabilityData>(DEFAULT_STABILITY);
   const [personnelData, setPersonnelData] = useState<PersonnelData>(DEFAULT_PERSONNEL);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [view, setView] = useState<'menu-inicial' | 'equipment' | 'fuel' | 'stability' | 'personnel' | 'tv-mode'>('menu-inicial');
+  const [view, setView] = useState<'menu-inicial' | 'equipment' | 'fuel' | 'stability' | 'personnel' | 'tv-mode' | 'cav'>('menu-inicial');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTvSlide, setCurrentTvSlide] = useState(0);
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('custom_ship_logo'));
@@ -266,7 +269,7 @@ const App: React.FC = () => {
                 <h2 className="text-3xl sm:text-7xl font-black uppercase text-blue-400 flex items-center gap-4 sm:gap-6">
                   <Compass className="w-8 h-8 sm:w-[60px] sm:h-[60px]" /> Estabilidade
                 </h2>
-                <StabilityPanel data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+                <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
               </div>
             )}
 
@@ -289,6 +292,15 @@ const App: React.FC = () => {
                   data={equipmentData} 
                   onStatusChange={handleStatusChange} 
                 />
+              </div>
+            )}
+
+            {currentTvSlide === 3 && (
+              <div className="h-full space-y-6 sm:space-y-10 pb-20 animate-in fade-in zoom-in-95 duration-500">
+                <h2 className="text-3xl sm:text-7xl font-black uppercase text-blue-400 flex items-center gap-4 sm:gap-6">
+                  <ShieldAlert className="w-8 h-8 sm:w-[60px] sm:h-[60px]" /> Controle de Avarias
+                </h2>
+                <CAVPanel />
               </div>
             )}
           </div>
@@ -371,6 +383,7 @@ const App: React.FC = () => {
               { id: 'equipment', icon: <Activity size={18} />, label: 'Equipamentos' },
               { id: 'fuel', icon: <Droplets size={18} />, label: 'Cargas' },
               { id: 'stability', icon: <Compass size={18} />, label: 'Estabilidade' },
+              { id: 'cav', icon: <ShieldAlert size={18} />, label: 'CAV' },
               { id: 'personnel', icon: <Users size={18} />, label: 'Quadro' }
             ].map(item => (
               <button 
@@ -402,6 +415,7 @@ const App: React.FC = () => {
                view === 'equipment' ? 'Equipamentos' : 
                view === 'fuel' ? 'Cargas Líquidas' : 
                view === 'stability' ? 'Estabilidade' : 
+               view === 'cav' ? 'Controle de Avarias' :
                view === 'personnel' ? 'Quadro de Serviço' : ''}
             </h2>
             <div className="flex items-center gap-2 w-full xs:w-auto">
@@ -423,7 +437,7 @@ const App: React.FC = () => {
             <div className="animate-in fade-in duration-500 space-y-8 lg:space-y-12">
                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-12">
                   <FuelPanel fuel={fuelData} onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
-                  <StabilityPanel data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+                  <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
                </div>
                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-12 min-h-[400px]">
                   <StatusCharts data={equipmentData} />
@@ -450,7 +464,13 @@ const App: React.FC = () => {
 
           {view === 'stability' && (
             <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
-              <StabilityPanel data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+              <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+            </div>
+          )}
+
+          {view === 'cav' && (
+            <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
+              <CAVPanel />
             </div>
           )}
 
