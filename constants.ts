@@ -67,7 +67,7 @@ export const CATEGORIES: EquipmentCategory[] = [
   },
   {
     name: "Compressores e Bombas de Resfriamento",
-    items: ["LPSW 1", "LPSW 2", "LPSW 3", "LPSW 4", "CAP 1", "CAP 2", "CAP 3", "CMP 1", "CMP 2", "CMP de Emergência", "CBP 1", "CBP 2", "CBP 3", "CBP 4"]
+    items: ["LPSW 1", "LPSW 2", "LPSW 3", "LPSW 4", "CAP 1", "CAP 2", "CAP 3", "CMP 1", "CMP 2", "CMP de Emergência", "CBP 1", "CBP 2", "CBP 3", "CBP 4", "CBP 5"]
   },
   {
     name: "Planta Frigorífica e Climatização da Água",
@@ -136,6 +136,7 @@ export const EQUIPMENT_LOCATIONS: Record<string, string> = {
   "CBP 2": "9J",
   "CBP 3": "9M",
   "CBP 4": "9M",
+  "CBP 5": "7P",
   "Planta Frigorífica 1": "7R",
   "Planta Frigorífica 2": "7R",
   "BAG 1": "9F",

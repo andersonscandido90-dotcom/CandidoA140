@@ -48,7 +48,6 @@ export interface EquipmentData {
   [name: string]: EquipmentStatus;
 }
 
-// Added LogEntry interface to support activity tracking and fix the import error in ActivityLog.tsx
 export interface LogEntry {
   id: string;
   item: string;
@@ -64,8 +63,9 @@ export interface DailyReport {
   fuel: FuelData;
   stability: StabilityData;
   personnel: PersonnelData;
-  // Added optional logs to DailyReport for future integration
   logs?: LogEntry[];
+  restrictionReasons?: Record<string, string>;
+  eductorStatuses?: Record<string, boolean>; // true = disponivel, false = indisponivel
 }
 
 export interface EquipmentCategory {

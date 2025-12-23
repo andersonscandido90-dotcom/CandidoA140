@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { ShieldAlert, Droplets, Info } from 'lucide-react';
+import { ShieldAlert, Droplets, Info, Power } from 'lucide-react';
 
 interface Eductor {
   capacity: number;
   deck: number;
+  side?: 'BB' | 'BE';
 }
 
 interface SectionData {
@@ -16,12 +17,12 @@ const SECTIONS: SectionData[] = [
   { section: 'C', eductors: [] },
   { section: 'D', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'F', eductors: [{ capacity: 15, deck: 9 }] },
-  { section: 'G', eductors: [{ capacity: 75, deck: 9 }, { capacity: 75, deck: 9 }] },
-  { section: 'H', eductors: [{ capacity: 75, deck: 9 }, { capacity: 75, deck: 9 }] },
-  { section: 'J', eductors: [{ capacity: 75, deck: 9 }, { capacity: 75, deck: 9 }] },
-  { section: 'K', eductors: [{ capacity: 75, deck: 9 }, { capacity: 75, deck: 9 }] },
-  { section: 'L', eductors: [{ capacity: 75, deck: 9 }, { capacity: 75, deck: 9 }] },
-  { section: 'M', eductors: [{ capacity: 75, deck: 9 }, { capacity: 75, deck: 9 }] },
+  { section: 'G', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
+  { section: 'H', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
+  { section: 'J', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
+  { section: 'K', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
+  { section: 'L', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
+  { section: 'M', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
   { section: 'N', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'P', eductors: [] },
   { section: 'Q', eductors: [{ capacity: 15, deck: 9 }] },
@@ -30,7 +31,12 @@ const SECTIONS: SectionData[] = [
   { section: 'T', eductors: [{ capacity: 15, deck: 7 }] },
 ];
 
-const CAVPanel: React.FC = () => {
+interface Props {
+  eductorStatuses: Record<string, boolean>;
+  onStatusToggle: (id: string) => void;
+}
+
+const CAVPanel: React.FC<Props> = ({ eductorStatuses, onStatusToggle }) => {
   return (
     <div className="bg-slate-900/80 border border-slate-800 shadow-2xl rounded-[1.5rem] sm:rounded-[3rem] p-6 lg:p-12 backdrop-blur-md">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10 border-b border-slate-800/60 pb-8">
@@ -43,10 +49,10 @@ const CAVPanel: React.FC = () => {
             <p className="text-slate-500 font-bold uppercase text-[10px] lg:text-xs tracking-widest mt-1">Status e Distribuição de Edutores</p>
           </div>
         </div>
-        <div className="bg-slate-950 px-6 py-3 rounded-2xl border border-slate-800 flex items-center gap-3">
-          <Info className="text-blue-400" size={18} />
-          <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">
-            As letras representam as seções do navio
+        <div className="bg-slate-950 px-6 py-3 rounded-2xl border border-slate-800 flex items-center gap-3 text-amber-500">
+          <Info size={18} />
+          <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+            Clique no edutor para mudar status
           </span>
         </div>
       </div>
@@ -87,18 +93,31 @@ const CAVPanel: React.FC = () => {
                     <span className="text-xl font-black text-white">{item.eductors.length}</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
-                    {item.eductors.map((ed, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-blue-600/5 border border-blue-500/10 p-3 rounded-xl">
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-blue-400/70 uppercase">CAPACIDADE</span>
-                          <span className="text-lg font-black text-blue-400">{ed.capacity}</span>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[9px] font-black text-slate-500 uppercase">PISO</span>
-                          <span className="text-lg font-black text-white">#{ed.deck}</span>
-                        </div>
-                      </div>
-                    ))}
+                    {item.eductors.map((ed, idx) => {
+                      const eductorId = `${item.section}-${idx}`;
+                      const isAvailable = eductorStatuses[eductorId] !== false; // Default true
+                      return (
+                        <button 
+                          key={idx} 
+                          onClick={() => onStatusToggle(eductorId)}
+                          className={`flex items-center justify-between border p-3 rounded-xl transition-all active:scale-95 ${
+                            isAvailable 
+                              ? 'bg-blue-600/5 border-blue-500/10 hover:bg-blue-600/10' 
+                              : 'bg-red-600/10 border-red-500/30 hover:bg-red-600/20'
+                          }`}
+                        >
+                          <div className="flex flex-col text-left">
+                            <span className={`text-[9px] font-black uppercase ${isAvailable ? 'text-blue-400/70' : 'text-red-400/70'}`}>
+                              CAP {ed.capacity} / #{ed.deck} {ed.side ? `- ${ed.side}` : ''}
+                            </span>
+                            <span className={`text-sm font-black uppercase tracking-widest ${isAvailable ? 'text-white' : 'text-red-500'}`}>
+                              {isAvailable ? 'DISPONÍVEL' : 'INOPERANTE'}
+                            </span>
+                          </div>
+                          <Power className={isAvailable ? 'text-blue-500' : 'text-red-500'} size={18} />
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               ) : (
