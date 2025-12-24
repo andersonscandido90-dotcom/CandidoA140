@@ -1,6 +1,27 @@
 
 import React from 'react';
-import { ShieldAlert, Droplets, Info, Power } from 'lucide-react';
+import { ShieldAlert, Info, Waves, Settings2 } from 'lucide-react';
+
+// Componente visual customizado de Válvula de Esgoto (Manivela + Fluxo)
+const SewageValveIcon = ({ size = 24, className = "" }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="12" cy="10" r="8" />
+    <path d="M12 2v16" />
+    <path d="M4 10h16" />
+    <circle cx="12" cy="10" r="2" fill="currentColor" />
+    <path d="M2 20c1 1 2 0 3-1 2-2 3 0 5 0s3 2 5 2 3-2 5-2c1 0 2 1 3 1" />
+  </svg>
+);
 
 interface Eductor {
   capacity: number;
@@ -42,87 +63,77 @@ const CAVPanel: React.FC<Props> = ({ eductorStatuses, onStatusToggle }) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10 border-b border-slate-800/60 pb-8">
         <div className="flex items-center gap-5">
           <div className="p-4 bg-red-600 rounded-2xl shadow-xl shadow-red-900/20">
-            <ShieldAlert className="w-8 h-8 text-white" />
+            <ShieldAlert className="w-10 h-10 text-white" />
           </div>
           <div>
-            <h3 className="font-black text-white uppercase text-2xl lg:text-4xl tracking-tighter">Controle de Avarias (CAV)</h3>
-            <p className="text-slate-500 font-bold uppercase text-[10px] lg:text-xs tracking-widest mt-1">Status e Distribuição de Edutores</p>
+            <h3 className="font-black text-white uppercase text-2xl lg:text-5xl tracking-tighter">Controle de Avarias (CAV)</h3>
+            <p className="text-slate-500 font-bold uppercase text-[10px] lg:text-sm tracking-widest mt-1">Esgoto por Arrastamento (Edutores)</p>
           </div>
         </div>
-        <div className="bg-slate-950 px-6 py-3 rounded-2xl border border-slate-800 flex items-center gap-3 text-amber-500">
-          <Info size={18} />
-          <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-            Clique no edutor para mudar status
+        <div className="bg-slate-950 px-8 py-4 rounded-2xl border border-slate-800 flex items-center gap-4 text-amber-500 shadow-inner">
+          <Info size={24} />
+          <span className="text-[12px] font-black uppercase tracking-widest leading-tight">
+            Interaja com as válvulas para <br/> alternar o status de prontidão
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-10">
         {SECTIONS.map((item) => (
           <div 
             key={item.section}
-            className={`relative p-5 lg:p-8 rounded-[1.5rem] border-2 transition-all duration-300 group ${
+            className={`relative p-8 lg:p-12 rounded-[2.5rem] border-2 transition-all duration-300 group ${
               item.eductors.length > 0 
-                ? 'bg-slate-950 border-slate-800 hover:border-blue-500/50' 
+                ? 'bg-slate-950 border-slate-800 hover:border-blue-500/40' 
                 : 'bg-slate-900/40 border-slate-800 opacity-60 grayscale'
             }`}
           >
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-10">
               <div className="flex flex-col">
-                <span className="text-4xl lg:text-6xl font-black text-white leading-none tracking-tighter">
+                <span className="text-7xl lg:text-9xl font-black text-white leading-none tracking-tighter">
                   {item.section}
                 </span>
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">SEÇÃO</span>
+                <span className="text-[14px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">SEÇÃO</span>
               </div>
-              {item.eductors.length > 0 ? (
-                <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/20 group-hover:bg-blue-600/20 transition-colors">
-                  <Droplets className="text-blue-500" size={24} />
-                </div>
-              ) : (
-                <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                  <ShieldAlert className="text-slate-600" size={24} />
+              {item.eductors.length > 0 && (
+                <div className="p-4 bg-blue-600/10 rounded-2xl border border-blue-500/20">
+                  <SewageValveIcon className="text-blue-500" size={48} />
                 </div>
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {item.eductors.length > 0 ? (
-                <>
-                  <div className="flex justify-between items-center bg-slate-900/50 p-3 rounded-xl border border-slate-800">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">QTD:</span>
-                    <span className="text-xl font-black text-white">{item.eductors.length}</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {item.eductors.map((ed, idx) => {
-                      const eductorId = `${item.section}-${idx}`;
-                      const isAvailable = eductorStatuses[eductorId] !== false; // Default true
-                      return (
-                        <button 
-                          key={idx} 
-                          onClick={() => onStatusToggle(eductorId)}
-                          className={`flex items-center justify-between border p-3 rounded-xl transition-all active:scale-95 ${
-                            isAvailable 
-                              ? 'bg-blue-600/5 border-blue-500/10 hover:bg-blue-600/10' 
-                              : 'bg-red-600/10 border-red-500/30 hover:bg-red-600/20'
-                          }`}
-                        >
-                          <div className="flex flex-col text-left">
-                            <span className={`text-[9px] font-black uppercase ${isAvailable ? 'text-blue-400/70' : 'text-red-400/70'}`}>
-                              CAP {ed.capacity} / #{ed.deck} {ed.side ? `- ${ed.side}` : ''}
-                            </span>
-                            <span className={`text-sm font-black uppercase tracking-widest ${isAvailable ? 'text-white' : 'text-red-500'}`}>
-                              {isAvailable ? 'DISPONÍVEL' : 'INOPERANTE'}
-                            </span>
-                          </div>
-                          <Power className={isAvailable ? 'text-blue-500' : 'text-red-500'} size={18} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
+                <div className="grid grid-cols-1 gap-4">
+                  {item.eductors.map((ed, idx) => {
+                    const eductorId = `${item.section}-${idx}`;
+                    const isAvailable = eductorStatuses[eductorId] !== false;
+                    return (
+                      <button 
+                        key={idx} 
+                        onClick={() => onStatusToggle(eductorId)}
+                        className={`flex items-center justify-between border-2 p-6 rounded-2xl transition-all active:scale-95 ${
+                          isAvailable 
+                            ? 'bg-blue-600/5 border-blue-500/20 hover:bg-blue-600/10 hover:border-blue-500/40' 
+                            : 'bg-red-600/10 border-red-500/40 hover:bg-red-600/20'
+                        }`}
+                      >
+                        <div className="flex flex-col text-left gap-1">
+                          <span className={`text-[11px] lg:text-[13px] font-black uppercase tracking-wider ${isAvailable ? 'text-blue-400/80' : 'text-red-400/80'}`}>
+                            {ed.capacity} ton/h — Deck {ed.deck} {ed.side ? `(${ed.side})` : ''}
+                          </span>
+                          <span className={`text-xl lg:text-3xl font-black uppercase tracking-widest leading-none ${isAvailable ? 'text-white' : 'text-red-500'}`}>
+                            {isAvailable ? 'PRONTO' : 'AVARIADO'}
+                          </span>
+                        </div>
+                        <SewageValveIcon size={24} className={isAvailable ? 'text-blue-400' : 'text-red-400'} />
+                      </button>
+                    );
+                  })}
+                </div>
               ) : (
-                <div className="py-8 flex flex-col items-center justify-center text-center">
-                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Sem Edutor</span>
+                <div className="py-14 flex flex-col items-center justify-center text-center bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-[0.3em]">SEM EDUTORES</span>
                 </div>
               )}
             </div>

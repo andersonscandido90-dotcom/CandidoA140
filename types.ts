@@ -57,6 +57,13 @@ export interface LogEntry {
   user?: string;
 }
 
+export interface IsisEntry {
+  channel: string;
+  description: string;
+  translation: string;
+  category?: string;
+}
+
 export interface DailyReport {
   date: string;
   equipment: EquipmentData;
@@ -65,7 +72,9 @@ export interface DailyReport {
   personnel: PersonnelData;
   logs?: LogEntry[];
   restrictionReasons?: Record<string, string>;
-  eductorStatuses?: Record<string, boolean>; // true = disponivel, false = indisponivel
+  eductorStatuses?: Record<string, boolean>;
+  isisOverrides?: Record<string, string>;
+  theme?: string;
 }
 
 export interface EquipmentCategory {
