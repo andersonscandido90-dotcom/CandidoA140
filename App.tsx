@@ -267,6 +267,11 @@ const App: React.FC = () => {
     localStorage.setItem('app_theme', themeId);
   };
 
+  const handleViewChange = (newView: any) => {
+    setView(newView);
+    setSidebarOpen(false);
+  };
+
   const formattedSelectedDate = useMemo(() => {
     const [year, month, day] = selectedDate.split('-');
     const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -307,8 +312,23 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex ${currentTheme} text-slate-100 selection:bg-blue-600 relative overflow-x-hidden transition-colors duration-700`}>
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:w-80 bg-slate-900 border-r border-slate-800 lg:static transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      {/* Menu Backdrop para mobile */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[45] lg:hidden animate-in fade-in duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:w-80 bg-slate-900 border-r border-slate-800 lg:static transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
+          <div className="flex justify-between items-center mb-6 lg:hidden">
+            <h2 className="font-black text-slate-500 uppercase text-[10px] tracking-widest">Navegação</h2>
+            <button onClick={() => setSidebarOpen(false)} className="p-2 bg-slate-800 rounded-lg text-slate-400">
+              <X size={20} />
+            </button>
+          </div>
+
           <div className="flex flex-col items-center mb-10">
             <img src={SHIP_CONFIG.badgeUrl} className="w-24" alt="Logo" />
             <h1 className="font-black text-xl mt-4 text-center leading-tight uppercase">{SHIP_CONFIG.name}</h1>
@@ -317,7 +337,7 @@ const App: React.FC = () => {
             {NAV_ITEMS.map(item => (
               <button 
                 key={item.id} 
-                onClick={() => setView(item.id as any)} 
+                onClick={() => handleViewChange(item.id as any)} 
                 className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl font-black uppercase text-[11px] transition-all ${view === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-800'}`}
               >
                 {item.icon} {item.label}
@@ -331,11 +351,19 @@ const App: React.FC = () => {
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="px-8 py-6 border-b border-slate-800/50 flex flex-wrap justify-between items-center bg-slate-950/40 backdrop-blur-md gap-4">
-          <h2 className="text-2xl font-black uppercase text-white">{currentViewLabel}</h2>
-          
+        <header className="px-6 py-4 sm:px-8 sm:py-6 border-b border-slate-800/50 flex items-center justify-between bg-slate-950/40 backdrop-blur-md gap-4">
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-3 bg-slate-900 border border-slate-800 rounded-xl text-blue-500 shadow-lg active:scale-95 transition-all"
+            >
+              <Menu size={24} />
+            </button>
+            <h2 className="text-lg sm:text-2xl font-black uppercase text-white truncate">{currentViewLabel}</h2>
+          </div>
+          
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="hidden md:flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
               <Palette size={14} className="mx-2 text-slate-500" />
               {THEMES.map(theme => (
                 <button
@@ -348,16 +376,16 @@ const App: React.FC = () => {
               ))}
             </div>
 
-            <div className="bg-slate-900 px-4 py-2 rounded-xl flex items-center gap-3 border border-slate-800 shadow-inner">
-              <Calendar size={16} className="text-blue-500" />
-              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-transparent font-black text-white text-xs outline-none" />
+            <div className="bg-slate-900 px-3 py-2 sm:px-4 sm:py-2 rounded-xl flex items-center gap-2 sm:gap-3 border border-slate-800 shadow-inner">
+              <Calendar size={14} className="text-blue-500 shrink-0" />
+              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-transparent font-black text-white text-[10px] sm:text-xs outline-none w-[100px] sm:w-auto" />
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-12 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-12 space-y-8 sm:space-y-12 custom-scrollbar">
           {view === 'menu-inicial' && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 sm:gap-12">
                <FuelPanel fuel={fuelData} onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
                <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
                <StatusCharts data={equipmentData} />
