@@ -30,7 +30,7 @@ export interface FuelData {
 export interface StabilityData {
   draftForward: number; // Calado AV
   draftAft: number;     // Calado AR
-  heel: number;         // Banda (Graus)
+  heel: number;         // Banda (Graus) - Positivo BE, Negativo BB
   gm: number;           // Altura Metacêntrica
   displacement: number; // Deslocamento
 }

@@ -35,7 +35,11 @@ const DEFAULT_FUEL: FuelData = {
 };
 
 const DEFAULT_STABILITY: StabilityData = {
-  draftForward: 0, draftAft: 0, heel: 0, gm: 0, displacement: 0
+  draftForward: 6.5, 
+  draftAft: 6.5, 
+  heel: 0, 
+  gm: 2.3, 
+  displacement: 21500
 };
 
 const DEFAULT_PERSONNEL: PersonnelData = {
@@ -320,7 +324,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:w-80 bg-slate-900 border-r border-slate-800 lg:static transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:w-80 bg-slate-900 border-r border-slate-800 lg:static transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} print:hidden`}>
         <div className="p-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
           <div className="flex justify-between items-center mb-6 lg:hidden">
             <h2 className="font-black text-slate-500 uppercase text-[10px] tracking-widest">Navegação</h2>
@@ -344,14 +348,15 @@ const App: React.FC = () => {
               </button>
             ))}
           </nav>
-          <button onClick={() => setView('tv-mode')} className="w-full mt-6 bg-slate-800 p-4 rounded-xl font-black uppercase text-[11px] flex items-center gap-3 justify-center">
+          
+          <button onClick={() => setView('tv-mode')} className="w-full mt-4 bg-slate-800 hover:bg-slate-700 p-4 rounded-xl font-black uppercase text-[11px] flex items-center gap-3 justify-center transition-all border border-slate-700">
             <Tv size={18} /> Modo TV
           </button>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="px-6 py-4 sm:px-8 sm:py-6 border-b border-slate-800/50 flex items-center justify-between bg-slate-950/40 backdrop-blur-md gap-4">
+        <header className="px-6 py-4 sm:px-8 sm:py-6 border-b border-slate-800/50 flex items-center justify-between bg-slate-950/40 backdrop-blur-md gap-4 print:hidden">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(true)}
@@ -383,7 +388,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-12 space-y-8 sm:space-y-12 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-12 space-y-8 sm:space-y-12 custom-scrollbar print:p-0 print:overflow-visible print:h-auto">
           {view === 'menu-inicial' && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 sm:gap-12">
                <FuelPanel fuel={fuelData} onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />

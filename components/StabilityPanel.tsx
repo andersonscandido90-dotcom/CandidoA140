@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StabilityData, FuelData } from '../types';
 import { Compass, MoveVertical, Anchor, Gauge, Ship, Activity, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -13,37 +13,60 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   const meanDraft = (data.draftForward + data.draftAft) / 2;
   const trim = data.draftForward - data.draftAft; 
   
-  /**
-   * LÓGICA DE STATUS CORRIGIDA:
-   * Calado é profundidade. Se Calado AV é MAIOR, a proa está MAIS FUNDA.
-   * AV > AR = ABICADO (Trim pela proa)
-   * AR > AV = DERRABADO (Trim pela popa)
-   */
-  let statusLabel = "NIVELADO";
-  let statusColor = "bg-slate-800 border-slate-700 text-slate-400";
+  // Lógica Hidrostática baseada em 6.5m -> 21500t
+  const hydrostatics = useMemo(() => {
+    if (meanDraft <= 0) return { displacement: 0, km: 0 };
+    
+    // 1. Deslocamento: TPC aproximado de 48t/cm (4800 t/m)
+    const displacement = 21500 + (meanDraft - 6.5) * 4800;
+    
+    // 2. KM (Metacentro): Aproximação de curva hidrostática
+    const km = 14.45 - (meanDraft * 0.1);
+    
+    return { 
+      displacement: Math.max(0, displacement), 
+      km: Math.max(0, km)
+    };
+  }, [meanDraft]);
+
+  const displayDisplacement = hydrostatics.displacement;
+
+  // Lógica de Status do Trim e Atitude Geral
+  let statusLabel = "";
+  let statusColor = "";
   
-  if (data.draftForward > data.draftAft) {
+  if (data.draftForward === data.draftAft) {
+    if (data.heel === 0) {
+      statusLabel = "A CENTRO";
+      statusColor = "bg-green-600 border-white text-white shadow-lg";
+    } else {
+      statusLabel = "COMPASSADO";
+      statusColor = "bg-slate-800 border-slate-700 text-slate-400";
+    }
+  } else if (data.draftForward > data.draftAft) {
     statusLabel = "⚠ ABICADO";
     statusColor = "bg-blue-600 border-white text-white animate-pulse";
-  } else if (data.draftAft > data.draftForward) {
+  } else {
     statusLabel = "⚠ DERRABADO";
     statusColor = "bg-amber-500 border-black text-black";
   }
 
-  // CINEMÁTICA VISUAL:
-  // Se trim é positivo (AV > AR), queremos rotinar em sentido horário (bow down).
-  // No CSS, rotate(deg) positivo é sentido horário.
-  // Proa (AV) está na DIREITA do SVG.
-  const rotationAngle = trim * 3.5; 
-  const sensitivity = 18; 
-  // Offset vertical baseado no calado de projeto do Atlântico (6.5m)
-  const verticalOffset = -(meanDraft - 6.5) * sensitivity;
+  const scale = 15;
+  const waterLineY = 130;
+  const keelPosInSvg = 180;
+  const verticalOffset = (waterLineY + (meanDraft * scale)) - keelPosInSvg;
+
+  const distBetweenAxes = 400;
+  const rotationRad = Math.atan((trim * scale) / distBetweenAxes);
+  const rotationDeg = (rotationRad * 180) / Math.PI;
 
   const handleBBChange = (val: number) => {
+    // Se BB tem valor, BE deve ser 0. Banda BB é armazenada como negativo.
     onChange('heel', val === 0 ? 0 : -Math.abs(val));
   };
 
   const handleBEChange = (val: number) => {
+    // Se BE tem valor, BB deve ser 0. Banda BE é armazenada como positivo.
     onChange('heel', val === 0 ? 0 : Math.abs(val));
   };
 
@@ -54,7 +77,17 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   };
   const gmStatus = getGMStatus();
 
-  const renderInput = (label: string, value: number, key: keyof StabilityData, unit: string, icon: React.ReactNode) => (
+  // Lógica do Status da Banda
+  const heelStatus = useMemo(() => {
+    if (data.heel === 0) return { label: 'A PRUMO', color: 'text-green-400', icon: <CheckCircle2 size={14} /> };
+    return { 
+      label: data.heel > 0 ? 'ADERNADO PARA BORESTE (BE)' : 'ADERNADO PARA BOMBORDO (BB)', 
+      color: 'text-amber-400',
+      icon: <AlertCircle size={14} /> 
+    };
+  }, [data.heel]);
+
+  const renderInput = (label: string, value: number, onValChange: (v: number) => void, unit: string, icon: React.ReactNode, step = "0.1") => (
     <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-inner transition-all hover:bg-slate-800/60 group">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -68,9 +101,9 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
         <div className="flex items-center gap-2">
           <input
             type="number"
-            step="0.1"
+            step={step}
             value={value}
-            onChange={(e) => onChange(key, parseFloat(e.target.value) || 0)}
+            onChange={(e) => onValChange(parseFloat(e.target.value) || 0)}
             className="bg-transparent text-right font-black text-white text-lg sm:text-2xl w-16 sm:w-24 focus:outline-none focus:text-blue-400 transition-colors"
           />
           <span className="text-slate-500 font-black uppercase text-[10px] sm:text-xs">{unit}</span>
@@ -80,13 +113,16 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   );
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800 shadow-2xl rounded-[1.5rem] sm:rounded-[2rem] lg:rounded-[3rem] p-5 sm:p-6 lg:p-10 flex flex-col gap-6 sm:gap-10 backdrop-blur-md">
+    <div className="bg-slate-900/80 border border-slate-800 shadow-2xl rounded-[1.5rem] sm:rounded-2xl lg:rounded-[3rem] p-5 sm:p-6 lg:p-10 flex flex-col gap-6 sm:gap-10 backdrop-blur-md">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 sm:gap-8 border-b border-slate-800/60 pb-6 sm:pb-10">
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="p-3 sm:p-5 bg-blue-600 rounded-xl sm:rounded-[1.5rem] shadow-xl">
             <Compass className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
           </div>
-          <h3 className="font-black text-white uppercase text-2xl sm:text-4xl lg:text-5xl tracking-tighter">Estabilidade</h3>
+          <div>
+            <h3 className="font-black text-white uppercase text-2xl sm:text-4xl lg:text-5xl tracking-tighter">Estabilidade</h3>
+            <p className="text-slate-500 font-black text-[9px] sm:text-xs uppercase tracking-widest">A140 NAM ATLÂNTICO</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full sm:w-auto">
@@ -95,62 +131,69 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
             <p className="font-black text-white text-xl sm:text-3xl lg:text-4xl">{meanDraft.toFixed(2)}m</p>
           </div>
           <div className="bg-indigo-600/10 border-2 border-indigo-500/20 rounded-xl sm:rounded-2xl px-4 py-2 sm:px-6 sm:py-4 text-center">
-            <p className="font-black text-indigo-400 uppercase text-[8px] sm:text-[10px] mb-1 tracking-widest">TRIM</p>
-            <p className="font-black text-white text-xl sm:text-3xl lg:text-4xl">{Math.abs(trim).toFixed(2)}m</p>
+            <p className="font-black text-indigo-400 uppercase text-[8px] sm:text-[10px] mb-1 tracking-widest">DESLOCAMENTO</p>
+            <p className="font-black text-white text-xl sm:text-3xl lg:text-4xl">{Math.round(displayDisplacement).toLocaleString()}t</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        <div className="bg-slate-950/50 border-2 border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center min-h-[350px] sm:min-h-[480px] relative overflow-hidden">
+        <div className="bg-slate-950/50 border-2 border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center min-h-[480px] sm:min-h-[580px] relative overflow-hidden">
           <div className="w-full flex justify-between items-center mb-4 relative z-50">
             <span className="text-[9px] sm:text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Ship size={14} /> Perfil (Trim)
+              <Ship size={14} /> Status do Trim
             </span>
             <div className={`px-3 py-1 sm:px-5 sm:py-2 rounded-lg text-[8px] sm:text-[11px] font-black uppercase border-2 transition-colors ${statusColor}`}>
               {statusLabel}
             </div>
           </div>
+          
           <div className="flex-1 flex items-center justify-center relative w-full h-full overflow-hidden">
-            <div className="absolute inset-x-0 top-[60%] h-[2px] bg-blue-500/40 z-10 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-            <div 
-              className="relative w-full transition-all duration-1000 z-20 px-4"
-              style={{ transform: `translateY(${verticalOffset}px) rotate(${rotationAngle}deg)`, transformOrigin: 'center center' }}
-            >
-              <svg viewBox="0 0 500 150" className="w-full h-auto drop-shadow-2xl">
-                {/* Casco abaixo da linha d'água (Vermelho) */}
-                <path d="M40,85 L460,85 L445,115 L55,115 Z" fill="#b91c1c" stroke="#7f1d1d" strokeWidth="1" />
-                {/* Casco acima da linha d'água (Cinza) */}
-                <path d="M40,70 L460,70 L460,85 L40,85 Z" fill="#334155" stroke="#1e293b" strokeWidth="1" />
-                {/* Superestrutura simplificada */}
-                <path d="M320,70 L320,25 L380,25 L395,45 L395,70 Z" fill="#475569" stroke="#334155" strokeWidth="1" />
-                <rect x="335" y="12" width="10" height="13" fill="#1e293b" />
-              </svg>
-              {/* Etiquetas AR e AV */}
-              <div className="absolute left-4 top-[85px] -translate-y-1/2 -translate-x-1/2 flex flex-col items-center">
-                <span className="text-[8px] sm:text-[10px] font-black text-white uppercase bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700">AR</span>
-              </div>
-              <div className="absolute right-4 top-[85px] -translate-y-1/2 translate-x-1/2 flex flex-col items-center">
-                <span className="text-[8px] sm:text-[10px] font-black text-white uppercase bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700">AV</span>
-              </div>
-            </div>
+            <svg viewBox="0 0 500 250" className="w-full h-auto drop-shadow-[0_25px_25px_rgba(0,0,0,0.5)] overflow-visible">
+              <defs>
+                <linearGradient id="shipGray" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#94a3b8" />
+                  <stop offset="100%" stopColor="#475569" />
+                </linearGradient>
+                <linearGradient id="oceanBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.8" />
+                </linearGradient>
+              </defs>
+              <rect x="-50" y={waterLineY} width="600" height="200" fill="url(#oceanBlue)" />
+              <line x1="-50" y1={waterLineY} x2="550" y2={waterLineY} stroke="#60a5fa" strokeWidth="2" strokeDasharray="4 4" opacity="0.6" />
+              <g 
+                className="transition-all duration-1000 ease-in-out"
+                style={{ transform: `translateY(${verticalOffset}px) rotate(${rotationDeg}deg)`, transformOrigin: '250px 140px' }}
+              >
+                <path d="M15,40 L485,40 L485,95 L15,95 Z" fill="url(#shipGray)" stroke="#1e293b" strokeWidth="1" />
+                <path d="M15,95 L485,95 L460,180 L40,180 Z" fill="#991b1b" stroke="#450a0a" strokeWidth="1.5" />
+                <rect x="310" y="5" width="85" height="35" fill="#334155" />
+                <rect x="330" y="-15" width="12" height="20" fill="#0f172a" />
+                <rect x="360" y="-25" width="8" height="30" fill="#0f172a" />
+                <text x="55" y="195" fontSize="10" fontWeight="900" fill="#475569" textAnchor="middle" className="uppercase tracking-widest">Popa (AR)</text>
+                <text x="445" y="195" fontSize="10" fontWeight="900" fill="#475569" textAnchor="middle" className="uppercase tracking-widest">Proa (AV)</text>
+                <text x="250" y="145" fontSize="14" fontWeight="900" fill="white" opacity="0.1" textAnchor="middle" className="uppercase tracking-[1.2em]">A140</text>
+              </g>
+            </svg>
           </div>
-          <div className="w-full grid grid-cols-2 gap-3 mt-6 sm:mt-12 relative z-50">
-            <div className={`text-center p-3 rounded-xl border bg-slate-900/95 transition-colors ${data.draftAft > data.draftForward ? 'border-amber-500' : 'border-slate-700'}`}>
+
+          <div className="w-full grid grid-cols-2 gap-3 mt-4 sm:mt-12 relative z-50">
+            <div className={`text-center p-3 rounded-xl border bg-slate-900/95 shadow-xl transition-all ${data.draftAft > data.draftForward ? 'border-amber-500 ring-4 ring-amber-500/20' : 'border-slate-700'}`}>
               <p className="text-xl sm:text-4xl font-black text-white tracking-tighter">{data.draftAft.toFixed(2)}m</p>
-              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">CALADO AR (Popa)</p>
+              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">Calado Popa (AR)</p>
             </div>
-            <div className={`text-center p-3 rounded-xl border bg-slate-900/95 transition-colors ${data.draftForward > data.draftAft ? 'border-blue-500' : 'border-slate-700'}`}>
+            <div className={`text-center p-3 rounded-xl border bg-slate-900/95 shadow-xl transition-all ${data.draftForward > data.draftAft ? 'border-blue-500 ring-4 ring-blue-500/20' : 'border-slate-700'}`}>
               <p className="text-xl sm:text-4xl font-black text-white tracking-tighter">{data.draftForward.toFixed(2)}m</p>
-              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">CALADO AV (Proa)</p>
+              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">Calado Proa (AV)</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-slate-950/50 border-2 border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center min-h-[350px] sm:min-h-[480px]">
+        <div className="bg-slate-950/50 border-2 border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center min-h-[480px] sm:min-h-[580px]">
           <div className="w-full flex justify-between items-center mb-4 sm:mb-8">
             <span className="text-[9px] sm:text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Activity size={14} /> Banda Real (BB/BE)
+              <Activity size={14} /> Status da Banda
             </span>
           </div>
           <div className="flex-1 flex items-center justify-center w-full">
@@ -171,84 +214,46 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
               </div>
             </div>
           </div>
+          
+          <div className="w-full mt-8 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">A140:</span>
+              <div className="flex items-center gap-2">
+                {heelStatus.icon}
+                <span className={`text-sm lg:text-lg font-black ${heelStatus.color} tracking-tight`}>
+                  {heelStatus.label}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-        {renderInput("Calado AV", data.draftForward, "draftForward", "m", <MoveVertical size={18} />)}
-        {renderInput("Calado AR", data.draftAft, "draftAft", "m", <MoveVertical size={18} />)}
+        {renderInput("Calado AV", data.draftForward, (v) => onChange('draftForward', v), "m", <MoveVertical size={18} />)}
+        {renderInput("Calado AR", data.draftAft, (v) => onChange('draftAft', v), "m", <MoveVertical size={18} />)}
         
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 sm:p-5 shadow-inner transition-all hover:bg-slate-800/60 group">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-900 rounded-lg text-amber-500 p-2 border border-slate-800 group-hover:scale-110 transition-transform shrink-0">
-                <Activity size={18} />
-              </div>
-              <span className="font-black text-slate-300 uppercase tracking-widest text-[9px] sm:text-[11px] leading-tight">Banda BB</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                value={data.heel < 0 ? Math.abs(data.heel) : 0}
-                onChange={(e) => handleBBChange(parseFloat(e.target.value) || 0)}
-                className="bg-transparent text-right font-black text-white text-lg sm:text-2xl w-16 sm:w-24 focus:outline-none focus:text-amber-500 transition-colors"
-              />
-              <span className="text-slate-500 font-black uppercase text-[10px]">°</span>
-            </div>
-          </div>
-        </div>
+        {renderInput("GM", data.gm, (v) => onChange('gm', v), "m", <Anchor size={18} />)}
 
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 sm:p-5 shadow-inner transition-all hover:bg-slate-800/60 group">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-900 rounded-lg text-blue-500 p-2 border border-slate-800 group-hover:scale-110 transition-transform shrink-0">
-                <Activity size={18} />
-              </div>
-              <span className="font-black text-slate-300 uppercase tracking-widest text-[9px] sm:text-[11px] leading-tight">Banda BE</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                value={data.heel > 0 ? data.heel : 0}
-                onChange={(e) => handleBEChange(parseFloat(e.target.value) || 0)}
-                className="bg-transparent text-right font-black text-white text-lg sm:text-2xl w-16 sm:w-24 focus:outline-none focus:text-blue-500 transition-colors"
-              />
-              <span className="text-slate-500 font-black uppercase text-[10px]">°</span>
-            </div>
-          </div>
-        </div>
+        {renderInput("Banda BB", data.heel < 0 ? Math.abs(data.heel) : 0, handleBBChange, "°", <Activity size={18} />)}
+        {renderInput("Banda BE", data.heel > 0 ? Math.abs(data.heel) : 0, handleBEChange, "°", <Activity size={18} />)}
 
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 sm:p-5 shadow-inner transition-all hover:bg-slate-800/60 group">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="bg-slate-900 rounded-lg text-blue-400 p-2 border border-slate-800 group-hover:scale-110 transition-transform shrink-0">
-                <Anchor size={18} />
+                <Gauge size={18} />
               </div>
-              <div className="flex flex-col">
-                <span className="font-black text-slate-300 uppercase tracking-widest text-[9px] sm:text-[11px] leading-tight">GM (Metacêntrica)</span>
-                <span className={`text-[7px] font-black uppercase flex items-center gap-1 ${gmStatus.color}`}>
-                  {gmStatus.icon} {gmStatus.label}
-                </span>
-              </div>
+              <span className="font-black text-slate-300 uppercase tracking-widest text-[9px] sm:text-[11px] leading-tight">Deslocamento</span>
             </div>
             <div className="flex items-center gap-2">
-              <input
-                type="number"
-                step="0.01"
-                value={data.gm}
-                onChange={(e) => onChange('gm', parseFloat(e.target.value) || 0)}
-                className={`bg-transparent text-right font-black text-lg sm:text-2xl w-16 sm:w-24 focus:outline-none transition-colors ${gmStatus.color}`}
-              />
-              <span className="text-slate-500 font-black uppercase text-[10px]">m</span>
+              <span className="font-black text-white text-lg sm:text-2xl">
+                {Math.round(displayDisplacement).toLocaleString()}
+              </span>
+              <span className="text-slate-500 font-black uppercase text-[10px]">t</span>
             </div>
           </div>
         </div>
-
-        {renderInput("Deslocamento", data.displacement, "displacement", "t", <Gauge size={18} />)}
       </div>
     </div>
   );
