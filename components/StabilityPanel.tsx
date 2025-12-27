@@ -11,26 +11,33 @@ interface Props {
 
 const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   const meanDraft = (data.draftForward + data.draftAft) / 2;
-  const heightDiff = data.draftForward - data.draftAft; // Positivo = Proa mais ALTA (conforme modelo do usuário)
+  const trim = data.draftForward - data.draftAft; 
   
-  // Lógica de Status:
-  // Proa (AV) > Popa (AR) = DERRABADO (Proa mais alta)
-  // Popa (AR) > Proa (AV) = ABICADO (Popa mais alta)
+  /**
+   * LÓGICA DE STATUS CORRIGIDA:
+   * Calado é profundidade. Se Calado AV é MAIOR, a proa está MAIS FUNDA.
+   * AV > AR = ABICADO (Trim pela proa)
+   * AR > AV = DERRABADO (Trim pela popa)
+   */
   let statusLabel = "NIVELADO";
   let statusColor = "bg-slate-800 border-slate-700 text-slate-400";
   
   if (data.draftForward > data.draftAft) {
-    statusLabel = "⚠ DERRABADO";
-    statusColor = "bg-amber-500 border-black text-black";
-  } else if (data.draftAft > data.draftForward) {
     statusLabel = "⚠ ABICADO";
     statusColor = "bg-blue-600 border-white text-white animate-pulse";
+  } else if (data.draftAft > data.draftForward) {
+    statusLabel = "⚠ DERRABADO";
+    statusColor = "bg-amber-500 border-black text-black";
   }
 
   // CINEMÁTICA VISUAL:
-  const rotationAngle = -heightDiff * 3.0; 
+  // Se trim é positivo (AV > AR), queremos rotinar em sentido horário (bow down).
+  // No CSS, rotate(deg) positivo é sentido horário.
+  // Proa (AV) está na DIREITA do SVG.
+  const rotationAngle = trim * 3.5; 
   const sensitivity = 18; 
-  const verticalOffset = -(meanDraft - 7.0) * sensitivity;
+  // Offset vertical baseado no calado de projeto do Atlântico (6.5m)
+  const verticalOffset = -(meanDraft - 6.5) * sensitivity;
 
   const handleBBChange = (val: number) => {
     onChange('heel', val === 0 ? 0 : -Math.abs(val));
@@ -89,7 +96,7 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
           </div>
           <div className="bg-indigo-600/10 border-2 border-indigo-500/20 rounded-xl sm:rounded-2xl px-4 py-2 sm:px-6 sm:py-4 text-center">
             <p className="font-black text-indigo-400 uppercase text-[8px] sm:text-[10px] mb-1 tracking-widest">TRIM</p>
-            <p className="font-black text-white text-xl sm:text-3xl lg:text-4xl">{Math.abs(heightDiff).toFixed(2)}m</p>
+            <p className="font-black text-white text-xl sm:text-3xl lg:text-4xl">{Math.abs(trim).toFixed(2)}m</p>
           </div>
         </div>
       </div>
@@ -98,9 +105,9 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
         <div className="bg-slate-950/50 border-2 border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center min-h-[350px] sm:min-h-[480px] relative overflow-hidden">
           <div className="w-full flex justify-between items-center mb-4 relative z-50">
             <span className="text-[9px] sm:text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Ship size={14} /> TRIM
+              <Ship size={14} /> Perfil (Trim)
             </span>
-            <div className={`px-3 py-1 sm:px-5 sm:py-2 rounded-lg text-[8px] sm:text-[11px] font-black uppercase border-2 ${statusColor}`}>
+            <div className={`px-3 py-1 sm:px-5 sm:py-2 rounded-lg text-[8px] sm:text-[11px] font-black uppercase border-2 transition-colors ${statusColor}`}>
               {statusLabel}
             </div>
           </div>
@@ -111,11 +118,15 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
               style={{ transform: `translateY(${verticalOffset}px) rotate(${rotationAngle}deg)`, transformOrigin: 'center center' }}
             >
               <svg viewBox="0 0 500 150" className="w-full h-auto drop-shadow-2xl">
+                {/* Casco abaixo da linha d'água (Vermelho) */}
                 <path d="M40,85 L460,85 L445,115 L55,115 Z" fill="#b91c1c" stroke="#7f1d1d" strokeWidth="1" />
+                {/* Casco acima da linha d'água (Cinza) */}
                 <path d="M40,70 L460,70 L460,85 L40,85 Z" fill="#334155" stroke="#1e293b" strokeWidth="1" />
+                {/* Superestrutura simplificada */}
                 <path d="M320,70 L320,25 L380,25 L395,45 L395,70 Z" fill="#475569" stroke="#334155" strokeWidth="1" />
                 <rect x="335" y="12" width="10" height="13" fill="#1e293b" />
               </svg>
+              {/* Etiquetas AR e AV */}
               <div className="absolute left-4 top-[85px] -translate-y-1/2 -translate-x-1/2 flex flex-col items-center">
                 <span className="text-[8px] sm:text-[10px] font-black text-white uppercase bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700">AR</span>
               </div>
@@ -125,13 +136,13 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
             </div>
           </div>
           <div className="w-full grid grid-cols-2 gap-3 mt-6 sm:mt-12 relative z-50">
-            <div className="text-center p-3 rounded-xl border bg-slate-900/95 border-slate-700">
+            <div className={`text-center p-3 rounded-xl border bg-slate-900/95 transition-colors ${data.draftAft > data.draftForward ? 'border-amber-500' : 'border-slate-700'}`}>
               <p className="text-xl sm:text-4xl font-black text-white tracking-tighter">{data.draftAft.toFixed(2)}m</p>
-              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">CALADO AR</p>
+              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">CALADO AR (Popa)</p>
             </div>
-            <div className="text-center p-3 rounded-xl border bg-slate-900/95 border-slate-700">
+            <div className={`text-center p-3 rounded-xl border bg-slate-900/95 transition-colors ${data.draftForward > data.draftAft ? 'border-blue-500' : 'border-slate-700'}`}>
               <p className="text-xl sm:text-4xl font-black text-white tracking-tighter">{data.draftForward.toFixed(2)}m</p>
-              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">CALADO AV</p>
+              <p className="text-[8px] font-black uppercase text-slate-500 mt-1">CALADO AV (Proa)</p>
             </div>
           </div>
         </div>
