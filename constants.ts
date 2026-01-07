@@ -800,5 +800,5 @@ export const SHIP_CONFIG = {
   name: "NAM ATLÂNTICO",
   hullNumber: "A140",
   designation: "Navio-Aeródromo Multipropósito",
-  badgeUrl: "https://forcaaerea.com.br/wp-content/uploads/2020/11/A140_NAM_ATLANTICO_PHM.jpg"
+  badgeUrl: "https://tse3.mm.bing.net/th/id/OIP.LNrxq3XEZYXeVQv73TZEtQAAAA?rs=1&pid=ImgDetMain&o=7&rm=3"
 };
