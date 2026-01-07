@@ -31,7 +31,7 @@ import IsisPanel from './components/IsisPanel';
 
 const DEFAULT_FUEL: FuelData = { 
   water: 0, lubOil: 0, fuelOil: 0, jp5: 0,
-  maxWater: 570, maxLubOil: 300, maxFuelOil: 3000, maxJp5: 300
+  maxWater: 570, maxLubOil: 300, maxFuelOil: 3000, maxJp5: 443
 };
 
 const DEFAULT_STABILITY: StabilityData = {
