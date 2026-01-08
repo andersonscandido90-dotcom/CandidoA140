@@ -35,7 +35,7 @@ interface SectionData {
 }
 
 const SECTIONS: SectionData[] = [
-  { section: 'C', eductors: [] },
+  { section: 'C', eductors: [{ Esgoto Via edutor da D}] },
   { section: 'D', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'F', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'G', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
