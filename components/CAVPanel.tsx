@@ -36,7 +36,7 @@ interface SectionData {
 }
 
 const SECTIONS: SectionData[] = [
-  { section: 'C', eductors: [{capacity: 15, atraves: 'Via compartimento 9D'}  ] },
+  { section: 'C', eductors: [{ atraves: 'Via compartimento 9D'}  ] },
   { section: 'D', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'F', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'G', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
@@ -122,6 +122,9 @@ const CAVPanel: React.FC<Props> = ({ eductorStatuses, onStatusToggle }) => {
                         <div className="flex flex-col text-left gap-1">
                           <span className={`text-[11px] lg:text-[13px] font-black uppercase tracking-wider ${isAvailable ? 'text-blue-400/80' : 'text-red-400/80'}`}>
                              {ed.capacity} ton/h — Deck {ed.deck} {ed.side ? `(${ed.side})` : ''} {ed.atraves}
+                          </span>
+                          <span className={`text-[11px] lg:text-[13px] font-black uppercase tracking-wider ${isAvailable ? 'text-blue-400/80' : 'text-red-400/80'}`}>
+                             {ed.atraves}
                           </span>
                           <span className={`text-xl lg:text-3xl font-black uppercase tracking-widest leading-none ${isAvailable ? 'text-white' : 'text-red-500'}`}>
                             {isAvailable ? 'PRONTO' : 'AVARIADO'}
