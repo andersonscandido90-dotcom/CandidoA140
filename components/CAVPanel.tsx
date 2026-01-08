@@ -124,7 +124,7 @@ const CAVPanel: React.FC<Props> = ({ eductorStatuses, onStatusToggle }) => {
                              {ed.capacity} ton/h — Deck {ed.deck} {ed.side ? `(${ed.side})` : ''} {ed.atraves}
                           </span>
                           <span className={`text-[11px] lg:text-[13px] font-black uppercase tracking-wider ${isAvailable ? 'text-blue-400/80' : 'text-red-400/80'}`}>
-                             {ed.atraves}
+                             {ed.atraves} ton/h
                           </span>
                           <span className={`text-xl lg:text-3xl font-black uppercase tracking-widest leading-none ${isAvailable ? 'text-white' : 'text-red-500'}`}>
                             {isAvailable ? 'PRONTO' : 'AVARIADO'}
