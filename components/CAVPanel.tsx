@@ -27,12 +27,12 @@ interface Eductor {
   capacity: number;
   deck: number;
   side?: 'BB' | 'BE';
-  atraves: string;
 }
 
 interface SectionData {
   section: string;
   eductors: Eductor[];
+  atraves: string;
 }
 
 const SECTIONS: SectionData[] = [
