@@ -27,6 +27,7 @@ interface Eductor {
   capacity: number;
   deck: number;
   side?: 'BB' | 'BE';
+  através: string;
 }
 
 interface SectionData {
@@ -35,7 +36,7 @@ interface SectionData {
 }
 
 const SECTIONS: SectionData[] = [
-  { section: 'C', eductors: [{ capacity: 15, deck: 9 }] },
+  { section: 'C', eductors: [{ capacity: 15, através: '9D' }] },
   { section: 'D', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'F', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'G', eductors: [{ capacity: 75, deck: 9, side: 'BB' }, { capacity: 75, deck: 9, side: 'BE' }] },
