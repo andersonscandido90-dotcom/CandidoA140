@@ -134,7 +134,7 @@ const CAVPanel: React.FC<Props> = ({ eductorStatuses, onStatusToggle }) => {
                 </div>
               ) : (
                 <div className="py-14 flex flex-col items-center justify-center text-center bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-[0.3em]">Esgoto por outra seção</span>
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-[0.3em]">Sem edutor</span>
                 </div>
               )}
             </div>
