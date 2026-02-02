@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { StabilityData, FuelData } from '../types';
 import { Compass, MoveVertical, Anchor, Gauge, Ship, Activity, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -45,7 +45,7 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
 
   // === Lógica Hidrostática corrigida ===
   const hydrostatics = useMemo(() => {
-    if (meanDraft <= 0) return { displacement: 0, gm: 0, km: 0 };
+    if (meanDraft <= 0) return { displacement: 21500, gm: 2.3, km: 8.0 }; // Valores padrão
     
     // 1. Encontrar valores vizinhos na tabela para interpolação
     const sortedTable = [...hydrostaticTable].sort((a, b) => a.draft - b.draft);
@@ -108,6 +108,14 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
     };
   }, [meanDraft, trim, hydrostaticTable]);
 
+  // === ATUALIZAR O GM AUTOMATICAMENTE ===
+  useEffect(() => {
+    // Atualiza o GM no estado sempre que for recalculado
+    if (hydrostatics.gm !== data.gm) {
+      onChange('gm', hydrostatics.gm);
+    }
+  }, [hydrostatics.gm, data.gm, onChange]);
+
   const displayDisplacement = hydrostatics.displacement;
 
   // === Lógica de Status do Trim e Atitude Geral ===
@@ -140,12 +148,10 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   const rotationDeg = (rotationRad * 180) / Math.PI;
 
   const handleBBChange = (val: number) => {
-    // Se BB tem valor, BE deve ser 0. Banda BB é armazenada como negativo.
     onChange('heel', val === 0 ? 0 : -Math.abs(val));
   };
 
   const handleBEChange = (val: number) => {
-    // Se BE tem valor, BB deve ser 0. Banda BE é armazenada como positivo.
     onChange('heel', val === 0 ? 0 : Math.abs(val));
   };
 
@@ -167,7 +173,7 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
     };
   }, [data.heel]);
 
-  const renderInput = (label: string, value: number, onValChange: (v: number) => void, unit: string, icon: React.ReactNode, step = "0.1") => (
+  const renderInput = (label: string, value: number, onValChange: (v: number) => void, unit: string, icon: React.ReactNode, step = "0.1", readOnly = false) => (
     <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-inner transition-all hover:bg-slate-800/60 group">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -179,13 +185,19 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            step={step}
-            value={value}
-            onChange={(e) => onValChange(parseFloat(e.target.value) || 0)}
-            className="bg-transparent text-right font-black text-white text-lg sm:text-2xl w-16 sm:w-24 focus:outline-none focus:text-blue-400 transition-colors"
-          />
+          {readOnly ? (
+            <span className="bg-transparent text-right font-black text-white text-lg sm:text-2xl w-16 sm:w-24">
+              {value.toFixed(2)}
+            </span>
+          ) : (
+            <input
+              type="number"
+              step={step}
+              value={value}
+              onChange={(e) => onValChange(parseFloat(e.target.value) || 0)}
+              className="bg-transparent text-right font-black text-white text-lg sm:text-2xl w-16 sm:w-24 focus:outline-none focus:text-blue-400 transition-colors"
+            />
+          )}
           <span className="text-slate-500 font-black uppercase text-[10px] sm:text-xs">{unit}</span>
         </div>
       </div>
@@ -313,7 +325,8 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
         {renderInput("Calado AV", data.draftForward, (v) => onChange('draftForward', v), "m", <MoveVertical size={18} />)}
         {renderInput("Calado AR", data.draftAft, (v) => onChange('draftAft', v), "m", <MoveVertical size={18} />)}
         
-        {renderInput("GM", hydrostatics.gm, (v) => onChange('gm', v), "m", <Anchor size={18} />)}
+        {/* GM agora é READONLY e calculado automaticamente */}
+        {renderInput("GM", hydrostatics.gm, (v) => onChange('gm', v), "m", <Anchor size={18} />, "0.1", true)}
 
         {renderInput("Banda BB", data.heel < 0 ? Math.abs(data.heel) : 0, handleBBChange, "°", <Activity size={18} />)}
         {renderInput("Banda BE", data.heel > 0 ? Math.abs(data.heel) : 0, handleBEChange, "°", <Activity size={18} />)}
@@ -345,9 +358,14 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
               {gmStatus.label}
             </span>
           </div>
-          <span className="text-slate-500 text-sm">
-            GM = {hydrostatics.gm.toFixed(4)} m
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="text-slate-500 text-sm">
+              GM calculado: {hydrostatics.gm.toFixed(4)} m
+            </span>
+            <span className="text-xs text-slate-600">
+              Trim: {trim.toFixed(2)} m | Correção: {hydrostatics.trimCorrection?.toFixed(1) || '0.0'} t
+            </span>
+          </div>
         </div>
       </div>
     </div>
