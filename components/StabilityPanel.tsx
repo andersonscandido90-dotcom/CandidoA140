@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { StabilityData, FuelData } from '../types';
 import { Compass, MoveVertical, Anchor, Gauge, Ship, Activity, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -11,105 +10,98 @@ interface Props {
 
 const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   const meanDraft = (data.draftForward + data.draftAft) / 2;
-  const trim = data.draftForward - data.draftAft; // Positivo = trim para vante
+  const trim = data.draftForward - data.draftAft; 
   
-  // Tabela hidrostática (extraída da imagem)
-  const hydrostaticTable = useMemo(() => {
-    // Estrutura: caladoMédio -> {deRé: valor, nível: valor, deProa: valor}
-    return {
-      7.5: { deRé: 26118.811, nível: 25580.9, deProa: 25086.6 },
-      7.4: { deRé: 25670.582, nível: 25137.0, deProa: 24646.4 },
-      7.3: { deRé: 25224.438, nível: 24695.1, deProa: 24208.2 },
-      7.2: { deRé: 24780.4, nível: 24255.1, deProa: 23772.0 },
-      7.1: { deRé: 24338.3, nível: 23817.1, deProa: 23337.8 },
-      7.0: { deRé: 23898.2, nível: 23380.9, deProa: 22905.7 },
-      6.9: { deRé: 23460.1, nível: 22946.7, deProa: 22475.8 },
-      6.8: { deRé: 23024.0, nível: 22514.5, deProa: 22048.0 },
-      6.7: { deRé: 22589.9, nível: 22084.4, deProa: 21622.4 },
-      6.6: { deRé: 22157.7, nível: 21656.3, deProa: 21198.9 },
-      6.5: { deRé: 21727.4, nível: 21230.5, deProa: 20777.6 },
-      6.4: { deRé: 21299.1, nível: 20806.8, deProa: 20358.4 },
-      6.3: { deRé: 20873.0, nível: 20385.2, deProa: 19941.4 },
-      6.2: { deRé: 20449.1, nível: 19965.9, deProa: 19526.5 },
-      6.1: { deRé: 20027.3, nível: 19548.6, deProa: 19113.8 },
-      6.0: { deRé: 19607.7, nível: 19133.5, deProa: 18703.2 },
-      5.9: { deRé: 19190.4, nível: 18720.6, deProa: 18294.9 },
-      5.8: { deRé: 18775.2, nível: 18309.8, deProa: 17888.9 },
-      5.7: { deRé: 18362.2, nível: 17901.3, deProa: 17485.2 },
-      5.6: { deRé: 17951.5, nível: 17494.9, deProa: 17084.0 },
-      5.5: { deRé: 17542.9, nível: 17090.8, deProa: 16685.3 },
-      5.4: { deRé: 17136.6, nível: 16689.0, deProa: 16289.3 },
-      5.3: { deRé: 16732.5, nível: 16289.5, deProa: 15896.1 },
-      5.2: { deRé: 16330.7, nível: 15892.4, deProa: 15506.0 },
-      5.1: { deRé: 15931.2, nível: 15497.8, deProa: 15119.1 },
-      5.0: { deRé: 15534.0, nível: 15105.7, deProa: 14735.3 },
-    };
-  }, []);
+  // === Tabela Hidrostática (baseada na tabela fornecida) ===
+  const hydrostaticTable = useMemo(() => [
+    // calado, nível, deProa, deRé
+    { draft: 7.5, nivel: 25580.9, deProa: 25086.6, deRé: 26118.811 },
+    { draft: 7.4, nivel: 25137.0, deProa: 24646.4, deRé: 25670.582 },
+    { draft: 7.3, nivel: 24695.1, deProa: 24208.2, deRé: 25224.438 },
+    { draft: 7.2, nivel: 24255.1, deProa: 23772.0, deRé: 24780.4 },
+    { draft: 7.1, nivel: 23817.1, deProa: 23337.8, deRé: 24338.3 },
+    { draft: 7.0, nivel: 23380.9, deProa: 22905.7, deRé: 23898.2 },
+    { draft: 6.9, nivel: 22946.7, deProa: 22475.8, deRé: 23460.1 },
+    { draft: 6.8, nivel: 22514.5, deProa: 22048.0, deRé: 23024.0 },
+    { draft: 6.7, nivel: 22084.4, deProa: 21622.4, deRé: 22589.9 },
+    { draft: 6.6, nivel: 21656.3, deProa: 21198.9, deRé: 22157.7 },
+    { draft: 6.5, nivel: 21230.5, deProa: 20777.6, deRé: 21727.4 },
+    { draft: 6.4, nivel: 20806.8, deProa: 20358.4, deRé: 21299.1 },
+    { draft: 6.3, nivel: 20385.2, deProa: 19941.4, deRé: 20873.0 },
+    { draft: 6.2, nivel: 19965.9, deProa: 19526.5, deRé: 20449.1 },
+    { draft: 6.1, nivel: 19548.6, deProa: 19113.8, deRé: 20027.3 },
+    { draft: 6.0, nivel: 19133.5, deProa: 18703.2, deRé: 19607.7 },
+    { draft: 5.9, nivel: 18720.6, deProa: 18294.9, deRé: 19190.4 },
+    { draft: 5.8, nivel: 18309.8, deProa: 17888.9, deRé: 18775.2 },
+    { draft: 5.7, nivel: 17901.3, deProa: 17485.2, deRé: 18362.2 },
+    { draft: 5.6, nivel: 17494.9, deProa: 17084.0, deRé: 17951.5 },
+    { draft: 5.5, nivel: 17090.8, deProa: 16685.3, deRé: 17542.9 },
+    { draft: 5.4, nivel: 16689.0, deProa: 16289.3, deRé: 17136.6 },
+    { draft: 5.3, nivel: 16289.5, deProa: 15896.1, deRé: 16732.5 },
+    { draft: 5.2, nivel: 15892.4, deProa: 15506.0, deRé: 16330.7 },
+    { draft: 5.1, nivel: 15497.8, deProa: 15119.1, deRé: 15931.2 },
+    { draft: 5.0, nivel: 15105.7, deProa: 14735.3, deRé: 15534.0 },
+  ], []);
 
-  // Tabela GMf (do exemplo fornecido)
-  const gmTable = {
-    7.5: { deRé: 2.65, nível: 2.65, deProa: 2.65 }, // Valores fictícios - ajustar
-    6.5: { deRé: 2.703, nível: 2.703, deProa: 2.703 }, // Do exemplo
-    6.0: { deRé: 2.561, nível: 2.561, deProa: 2.561 }, // "Leve" do exemplo
-  };
-
+  // === Lógica Hidrostática corrigida ===
   const hydrostatics = useMemo(() => {
-    if (meanDraft <= 0) return { displacement: 0, gm: 0 };
+    if (meanDraft <= 0) return { displacement: 0, gm: 0, km: 0 };
     
-    // 1. Encontrar valores base na tabela (interpolação linear)
-    const calados = Object.keys(hydrostaticTable).map(Number).sort((a, b) => a - b);
-    const caladoInferior = calados.find(c => c >= meanDraft) || calados[calados.length - 1];
-    const caladoSuperior = calados.find(c => c <= meanDraft) || calados[0];
+    // 1. Encontrar valores vizinhos na tabela para interpolação
+    const sortedTable = [...hydrostaticTable].sort((a, b) => a.draft - b.draft);
+    let lower = sortedTable[0];
+    let upper = sortedTable[sortedTable.length - 1];
     
-    // Determinar qual coluna usar baseado no trim
-    let coluna = 'nível'; // padrão
-    const trimAbs = Math.abs(trim);
-    
-    if (trimAbs > 1.0) {
-      coluna = trim > 0 ? 'deProa' : 'deRé';
-    } else if (trimAbs <= 1.0) {
-      coluna = 'nível';
+    for (let i = 0; i < sortedTable.length - 1; i++) {
+      if (sortedTable[i].draft <= meanDraft && sortedTable[i + 1].draft >= meanDraft) {
+        lower = sortedTable[i];
+        upper = sortedTable[i + 1];
+        break;
+      }
     }
     
-    // Interpolação linear para deslocamento
-    const deslocInferior = hydrostaticTable[caladoInferior][coluna];
-    const deslocSuperior = hydrostaticTable[caladoSuperior][coluna];
+    // 2. Determinar qual coluna usar baseado no trim
+    const trimAbs = Math.abs(trim);
+    let column: keyof typeof lower = 'nivel'; // padrão
     
-    const fatorInterpolacao = (meanDraft - caladoInferior) / (caladoSuperior - caladoInferior);
-    const displacement = deslocInferior + (deslocSuperior - deslocInferior) * fatorInterpolacao;
+    if (trimAbs > 1.0) {
+      column = trim > 0 ? 'deProa' : 'deRé';
+    } else if (trimAbs <= 1.0) {
+      column = 'nivel';
+    }
     
-    // 2. Cálculo correto conforme fórmulas
-    // K = valor da tabela para o calado médio e trim
-    const K = hydrostaticTable[6.5][coluna]; // Ex: 21.230,5 para trim ré
+    // 3. Interpolação linear para obter K (valor da tabela)
+    const interpolationFactor = (meanDraft - lower.draft) / (upper.draft - lower.draft);
+    const K = lower[column] + (upper[column] - lower[column]) * interpolationFactor;
     
-    // C = valor nível (trim 0) para o mesmo calado médio
-    const C = hydrostaticTable[6.5]['nível']; // 20.777,6
+    // 4. Obter C (valor para trim zero/nível)
+    const C_lower = lower.nivel;
+    const C_upper = upper.nivel;
+    const C = C_lower + (C_upper - C_lower) * interpolationFactor;
     
-    // T = C - K
-    const T = C - K; // Ex: 20.777,6 - 21.230,5 = -452,9
+    // 5. Cálculos conforme fórmula do exemplo
+    const T = C - K;                    // T = C - K
+    const S = T * trim;                 // S = T × W (W = trim)
+    const displacement = C + S;         // t = C + S (deslocamento corrigido)
     
-    // S = T × W (W = trim)
-    const S = T * trim; // Ex: (-452,9) × (-0,6) = 271,74
+    // 6. Cálculo do GM (P = (V × t) / u)
+    // V = GMf condicional (2,703 para carregado / 2,561 para leve)
+    // u = Deslocamento condicional (21.490 para carregado / 17.718 para leve)
+    const isLoaded = displacement > 20000; // Aproximação: acima de 20000t = carregado
+    const V = isLoaded ? 2.703 : 2.561;
+    const u = isLoaded ? 21490 : 17718;
     
-    // t = C + S (deslocamento corrigido)
-    const t = C + S; // Ex: 20.777,6 + 271,74 = 21.049,34
+    const gm = (V * displacement) / u; // GM calculado
     
-    // 3. Cálculo do GM
-    // P = (V × t) / u
-    // Onde:
-    // V = GMf da tabela (2,703 para carregado, 2,561 para leve)
-    // u = Deslocamento condicional da tabela (21.490 para carregado, 17.718 para leve)
-    const estadoNavio = displacement > 20000 ? 'carregado' : 'leve';
-    const V = estadoNavio === 'carregado' ? 2.703 : 2.561;
-    const u = estadoNavio === 'carregado' ? 21490 : 17718;
-    
-    const P = (V * t) / u; // GM calculado
+    // 7. Calcular KM aproximado (para manter compatibilidade)
+    const km = 14.45 - (meanDraft * 0.1);
     
     return { 
-      displacement: Math.max(0, t), // Usar o deslocamento corrigido
-      gm: Math.max(0, P),
+      displacement: Math.max(0, displacement),
+      gm: Math.max(0, gm),
+      km: Math.max(0, km),
       trimCorrection: S,
-      baseDisplacement: displacement, // Deslocamento sem correção
+      baseDisplacement: C,
       K_value: K,
       C_value: C,
       T_value: T
@@ -117,18 +109,8 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   }, [meanDraft, trim, hydrostaticTable]);
 
   const displayDisplacement = hydrostatics.displacement;
-  
-  return (
-    <div>
-      <div>Calado Médio: {meanDraft.toFixed(2)} m</div>
-      <div>Trim: {trim.toFixed(2)} m ({trim > 0 ? 'para vante' : 'para ré'})</div>
-      <div>Deslocamento: {displayDisplacement.toFixed(1)} t</div>
-      <div>GM: {hydrostatics.gm.toFixed(4)} m</div>
-      <div>Correção por trim: {hydrostatics.trimCorrection.toFixed(1)} t</div>
-    </div>
-  );
-};
-  // Lógica de Status do Trim e Atitude Geral
+
+  // === Lógica de Status do Trim e Atitude Geral ===
   let statusLabel = "";
   let statusColor = "";
   
@@ -168,10 +150,11 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
   };
 
   const getGMStatus = () => {
-    if (data.gm <= 0) return { label: 'PERIGO CRÍTICO', color: 'text-red-500', icon: <AlertCircle size={14} /> };
-    if (data.gm < 1.0) return { label: 'ESTABILIDADE REDUZIDA', color: 'text-amber-500', icon: <AlertCircle size={14} /> };
+    if (hydrostatics.gm <= 0) return { label: 'PERIGO CRÍTICO', color: 'text-red-500', icon: <AlertCircle size={14} /> };
+    if (hydrostatics.gm < 1.0) return { label: 'ESTABILIDADE REDUZIDA', color: 'text-amber-500', icon: <AlertCircle size={14} /> };
     return { label: 'ESTÁVEL', color: 'text-green-500', icon: <CheckCircle2 size={14} /> };
   };
+  
   const gmStatus = getGMStatus();
 
   // Lógica do Status da Banda
@@ -330,7 +313,7 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
         {renderInput("Calado AV", data.draftForward, (v) => onChange('draftForward', v), "m", <MoveVertical size={18} />)}
         {renderInput("Calado AR", data.draftAft, (v) => onChange('draftAft', v), "m", <MoveVertical size={18} />)}
         
-        {renderInput("GM", data.gm, (v) => onChange('gm', v), "m", <Anchor size={18} />)}
+        {renderInput("GM", hydrostatics.gm, (v) => onChange('gm', v), "m", <Anchor size={18} />)}
 
         {renderInput("Banda BB", data.heel < 0 ? Math.abs(data.heel) : 0, handleBBChange, "°", <Activity size={18} />)}
         {renderInput("Banda BE", data.heel > 0 ? Math.abs(data.heel) : 0, handleBEChange, "°", <Activity size={18} />)}
@@ -350,6 +333,21 @@ const StabilityPanel: React.FC<Props> = ({ data, fuelData, onChange }) => {
               <span className="text-slate-500 font-black uppercase text-[10px]">t</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Adicionar indicador de status do GM */}
+      <div className="mt-4 p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {gmStatus.icon}
+            <span className={`font-black uppercase text-sm ${gmStatus.color}`}>
+              {gmStatus.label}
+            </span>
+          </div>
+          <span className="text-slate-500 text-sm">
+            GM = {hydrostatics.gm.toFixed(4)} m
+          </span>
         </div>
       </div>
     </div>
