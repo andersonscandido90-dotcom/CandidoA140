@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { 
   Activity, 
   Droplets, 
@@ -53,6 +53,71 @@ const THEMES = [
   { id: 'bg-emerald-950', label: 'Emerald', color: '#061a15' },
   { id: 'bg-neutral-950', label: 'Carbon', color: '#0a0a0a' },
 ];
+
+const ShipLogo = memo(({ className = "w-24 h-auto", customUrl }: { className?: string, customUrl?: string | null }) => {
+  const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Tenta carregar a imagem personalizada ou a padrão
+  const logoSrc = customUrl || SHIP_CONFIG.badgeUrl;
+  
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
+      {isLoading && !imageError && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+      
+      {!imageError ? (
+        <img 
+          src={logoSrc}
+          alt="Logo do Navio" 
+          className={`w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          crossOrigin="anonymous"
+          onLoad={() => setIsLoading(false)}
+          onError={(e) => {
+            console.error("Erro ao carregar logo:", logoSrc);
+            setImageError(true);
+            setIsLoading(false);
+            
+            // Fallback para um SVG naval com fundo transparente
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              // Remove qualquer fallback anterior
+              const existingFallback = parent.querySelector('.fallback-icon');
+              if (existingFallback) existingFallback.remove();
+              
+              // Cria um ícone SVG naval elegante
+              const icon = document.createElement('div');
+              icon.className = "fallback-icon p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-2xl";
+              icon.innerHTML = `
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
+                  <path d="M2 17L12 22L22 17" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
+                  <path d="M2 12L12 17L22 12" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
+                  <circle cx="12" cy="12" r="2" stroke="white" stroke-width="1.5" fill="white" fill-opacity="0.2"/>
+                </svg>
+              `;
+              parent.appendChild(icon);
+            }
+          }}
+        />
+      ) : (
+        // Fallback SVG naval elegante
+        <div className="fallback-icon p-3 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-2xl">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
+            <path d="M2 17L12 22L22 17" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
+            <path d="M2 12L12 17L22 12" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
+            <circle cx="12" cy="12" r="2" stroke="white" stroke-width="1.5" fill="white" fill-opacity="0.2"/>
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+});
 
 const PersonnelView: React.FC<{ 
   data: PersonnelData; 
@@ -189,6 +254,9 @@ const App: React.FC = () => {
   const [view, setView] = useState<'menu-inicial' | 'equipment' | 'fuel' | 'stability' | 'personnel' | 'tv-mode' | 'cav' | 'restrictions' | 'isis'>('menu-inicial');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTvSlide, setCurrentTvSlide] = useState(0);
+  const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('custom_ship_logo'));
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const NAV_ITEMS = useMemo(() => [
     { id: 'menu-inicial', icon: <LayoutDashboard size={18} />, label: 'Menu inicial' },
@@ -319,6 +387,19 @@ const App: React.FC = () => {
     setSidebarOpen(false);
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setCustomLogo(base64);
+        localStorage.setItem('custom_ship_logo', base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const formattedSelectedDate = useMemo(() => {
     const [year, month, day] = selectedDate.split('-');
     const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -334,7 +415,7 @@ const App: React.FC = () => {
       <div className={`fixed inset-0 ${currentTheme} text-white flex flex-col overflow-hidden z-[100]`}>
         <div className="bg-slate-900 border-b-4 border-blue-600 p-8 flex justify-between items-center">
           <div className="flex items-center gap-8">
-            <img src={SHIP_CONFIG.badgeUrl} className="h-24" alt="Logo" />
+            <ShipLogo className="h-24 w-auto" customUrl={customLogo} />
             <div>
               <h1 className="text-5xl font-black uppercase">{SHIP_CONFIG.name}</h1>
               <p className="text-xl text-slate-400 font-bold uppercase">{formattedSelectedDate}</p>
@@ -377,9 +458,15 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex flex-col items-center mb-10">
-            <img src={SHIP_CONFIG.badgeUrl} className="w-24" alt="Logo" />
+            <button onClick={() => fileInputRef.current?.click()} className="group relative">
+              <ShipLogo className="w-24 h-auto" customUrl={customLogo} />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center">
+                <span className="text-[10px] font-black text-white">TROCAR</span>
+              </div>
+            </button>
             <h1 className="font-black text-xl mt-4 text-center leading-tight uppercase">{SHIP_CONFIG.name}</h1>
           </div>
+
           <nav className="flex-1 space-y-2">
             {NAV_ITEMS.map(item => (
               <button 
@@ -449,6 +536,15 @@ const App: React.FC = () => {
           {view === 'personnel' && <PersonnelView data={personnelData} onChange={(k, v) => saveData({ personnel: { ...personnelData, [k as keyof PersonnelData]: v } })} />}
         </div>
       </main>
+
+      {/* Input oculto para upload de logo */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleLogoUpload}
+      />
     </div>
   );
 };
