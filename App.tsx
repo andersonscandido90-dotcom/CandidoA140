@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Activity, 
@@ -60,6 +59,22 @@ const PersonnelView: React.FC<{
   onChange: (key: keyof PersonnelData, value: any) => void 
 }> = ({ data, onChange }) => {
   const shifts = ["08:00 às 12:00", "12:00 às 16:00", "16:00 às 20:00"];
+  const [serviceNotes, setServiceNotes] = useState<string>('');
+
+  // Carrega anotações salvas
+  React.useEffect(() => {
+    const savedNotes = localStorage.getItem('service_notes');
+    if (savedNotes) {
+      setServiceNotes(savedNotes);
+    }
+  }, []);
+
+  // Salva automaticamente
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newNotes = e.target.value;
+    setServiceNotes(newNotes);
+    localStorage.setItem('service_notes', newNotes);
+  };
 
   const renderField = (label: string, value: string, key: keyof PersonnelData, icon: React.ReactNode) => (
     <div className="bg-slate-900 border border-slate-800 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col gap-4">
@@ -108,25 +123,53 @@ const PersonnelView: React.FC<{
   );
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
-      <div className="space-y-6 sm:space-y-8">
-        <h3 className="font-black flex items-center gap-4 text-white uppercase text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6">
-          <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-          Supervisão
-        </h3>
-        {renderField("Supervisor MO", data.supervisorMO, "supervisorMO", <UserCheck size={18} />)}
-        {renderField("Supervisor EL", data.supervisorEL, "supervisorEL", <UserCheck size={18} />)}
-        {renderField("Fiel CAV", data.fielCav, "fielCav", <Shield size={18} />)}
-        {renderField("Supervisor de Máquinas", data.encarregadoMaquinas, "encarregadoMaquinas", <Activity size={18} />)}
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Grid existente com os campos de pessoal */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
+        <div className="space-y-6 sm:space-y-8">
+          <h3 className="font-black flex items-center gap-4 text-white uppercase text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+            Supervisão
+          </h3>
+          {renderField("Supervisor MO", data.supervisorMO, "supervisorMO", <UserCheck size={18} />)}
+          {renderField("Supervisor EL", data.supervisorEL, "supervisorEL", <UserCheck size={18} />)}
+          {renderField("Fiel CAV", data.fielCav, "fielCav", <Shield size={18} />)}
+          {renderField("Supervisor de Máquinas", data.encarregadoMaquinas, "encarregadoMaquinas", <Activity size={18} />)}
+        </div>
+        
+        <div className="space-y-6 sm:space-y-8">
+          <h3 className="font-black flex items-center gap-4 text-white uppercase text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+            Escalas de Serviço
+          </h3>
+          {renderShiftList("Auxiliares de Serviço", data.auxiliares, "auxiliares", <Users size={18} />)}
+          {renderShiftList("Patrulhas de Serviço", data.patrulha, "patrulha", <Shield size={18} />)}
+        </div>
       </div>
-      
-      <div className="space-y-6 sm:space-y-8">
-        <h3 className="font-black flex items-center gap-4 text-white uppercase text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6">
-          <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-          Escalas de Serviço
-        </h3>
-        {renderShiftList("Auxiliares de Serviço", data.auxiliares, "auxiliares", <Users size={18} />)}
-        {renderShiftList("Patrulhas de Serviço", data.patrulha, "patrulha", <Shield size={18} />)}
+
+      {/* NOVA CAIXA DE TEXTO - ANOTAÇÕES DO SERVIÇO */}
+      <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] mt-8">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-3 bg-indigo-600/20 rounded-xl">
+            <ClipboardList className="w-6 h-6 text-indigo-400" />
+          </div>
+          <h3 className="font-black uppercase text-white text-lg sm:text-xl">
+            Anotações do Serviço
+          </h3>
+        </div>
+        
+        <textarea
+          value={serviceNotes}
+          onChange={handleNotesChange}
+          placeholder="Digite aqui observações gerais, ocorrências, lembretes, procedimentos ou qualquer informação relevante para o serviço..."
+          className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 font-mono text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none transition-all resize-y min-h-[200px] text-base"
+        />
+        
+        <div className="flex justify-end mt-4">
+          <span className="text-sm font-mono text-slate-600">
+            {serviceNotes.length} caracteres
+          </span>
+        </div>
       </div>
     </div>
   );
