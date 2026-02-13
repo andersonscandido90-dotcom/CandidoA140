@@ -33,7 +33,7 @@ const SECTIONS: SectionData[] = [
   { section: 'P', eductors: [], sewageVia: 'Seção N' },
   { section: 'Q', eductors: [{ capacity: 15, deck: 9 }] },
   { section: 'R', eductors: [], sewageVia: 'Seção Q' },
-  { section: 'S', eductors: [], sewageVia: 'Seção Q' },
+  { section: 'S', eductors: [], sewageVia: 'Não possui equipamento de esgoto fixo' },
   { section: 'T', eductors: [{ capacity: 15, deck: 7 }] },
 ];
 
