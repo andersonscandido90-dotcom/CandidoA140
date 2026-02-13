@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAM ATLÂNTICO - TV MONITOR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #f1f5f9;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header estilo original */
+        .header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid #334155;
+            border-radius: 40px;
+            padding: 25px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .brasao {
+            width: 80px;
+            height: 80px;
+            background: #1e293b;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+            border: 3px solid #2563eb;
+            color: #2563eb;
+        }
+
+        .titulo h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .titulo p {
+            color: #2563eb;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .status-info {
+            display: flex;
+            gap: 30px;
+            background: #1e293b;
+            padding: 15px 25px;
+            border-radius: 30px;
+            border: 1px solid #334155;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sync-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 20px #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        .sync-dot.disconnected {
+            background: #ef4444;
+            box-shadow: 0 0 20px #ef4444;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .data-display {
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .data-display span {
+            color: #2563eb;
+            margin-right: 5px;
+        }
+
+        /* Grid principal - vertical */
+        .main-grid {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* Cards de Carga Líquida */
+        .carga-section {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid #334155;
+            border-radius: 40px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #334155;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .section-title .badge {
+            background: #2563eb;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .carga-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .carga-item {
+            background: #1e293b;
+            border-radius: 30px;
+            padding: 25px;
+            border-left: 6px solid;
+            transition: all 0.2s;
+        }
+
+        .carga-item.water { border-color: #2563eb; }
+        .carga-item.luboil { border-color: #eab308; }
+        .carga-item.fueloil { border-color: #94a3b8; }
+        .carga-item.jp5 { border-color: #a855f7; }
+
+        .carga-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .carga-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-size: 1.2rem;
+        }
+
+        .carga-valor {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+        }
+
+        .carga-unidade {
+            font-size: 1rem;
+            color: #2563eb;
+            margin-left: 5px;
+        }
+
+        .carga-bar {
+            height: 20px;
+            background: #0f172a;
+            border-radius: 30px;
+            overflow: hidden;
+            margin: 20px 0 15px;
+        }
+
+        .carga-bar-fill {
+            height: 100%;
+            border-radius: 30px;
+            transition: width 0.3s ease;
+        }
+
+        .carga-bar-fill.water { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+        .carga-bar-fill.luboil { background: linear-gradient(90deg, #eab308, #facc15); }
+        .carga-bar-fill.fueloil { background: linear-gradient(90deg, #475569, #94a3b8); }
+        .carga-bar-fill.jp5 { background: linear-gradient(90deg, #9333ea, #a855f7); }
+
+        .carga-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .carga-percent {
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 1.3rem;
+        }
+
+        .capacidade {
+            color: #64748b;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Painel de Equipamentos */
+        .equipamentos-section {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid #334155;
+            border-radius: 40px;
+            padding: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .equipamentos-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #334155;
+        }
+
+        .equipamentos-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .total-badge {
+            background: #2563eb;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .equipamentos-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .equipamentos-grid::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .equipamentos-grid::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        .equipamentos-grid::-webkit-scrollbar-thumb {
+            background: #2563eb;
+            border-radius: 10px;
+        }
+
+        .equipamento-card {
+            background: #1e293b;
+            border: 3px solid transparent;
+            border-radius: 25px;
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .equipamento-card.verde { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+        .equipamento-card.azul { border-color: #2563eb; background: rgba(37, 99, 235, 0.1); }
+        .equipamento-card.amarela { border-color: #eab308; background: rgba(234, 179, 8, 0.1); }
+        .equipamento-card.cinza { border-color: #94a3b8; background: rgba(148, 163, 184, 0.1); }
+        .equipamento-card.vermelho { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+        .status-indicator {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            margin-bottom: 5px;
+        }
+
+        .status-indicator.verde { background: #22c55e; box-shadow: 0 0 20px #22c55e; }
+        .status-indicator.azul { background: #2563eb; box-shadow: 0 0 20px #2563eb; }
+        .status-indicator.amarela { background: #eab308; box-shadow: 0 0 20px #eab308; }
+        .status-indicator.cinza { background: #94a3b8; box-shadow: 0 0 20px #94a3b8; }
+        .status-indicator.vermelho { background: #ef4444; box-shadow: 0 0 20px #ef4444; }
+
+        .equipamento-nome {
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            color: white;
+            word-break: break-word;
+        }
+
+        .equipamento-status {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.5);
+            width: 100%;
+            text-align: center;
+            color: #cbd5e1;
+        }
+
+        /* Legenda */
+        .legenda {
+            display: flex;
+            gap: 25px;
+            padding: 15px 25px;
+            background: #1e293b;
+            border-radius: 40px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            border: 1px solid #334155;
+        }
+
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .legenda-cor {
+            width: 25px;
+            height: 25px;
+            border-radius: 8px;
+        }
+
+        .legenda-cor.verde { background: #22c55e; }
+        .legenda-cor.azul { background: #2563eb; }
+        .legenda-cor.amarela { background: #eab308; }
+        .legenda-cor.cinza { background: #94a3b8; }
+        .legenda-cor.vermelho { background: #ef4444; }
+
+        /* Loading */
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid #1e293b;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsividade */
+        @media (max-width: 1200px) {
+            .equipamentos-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .carga-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .equipamentos-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div class="logo-area">
+                    <div class="brasao">⚓</div>
+                    <div class="titulo">
+                        <h1>NAM ATLÂNTICO A140</h1>
+                        <p>MONITORAMENTO EM TEMPO REAL</p>
+                    </div>
+                </div>
+                <div class="status-info">
+                    <div class="sync-status">
+                        <div class="sync-dot" id="syncDot"></div>
+                        <span id="syncText">Conectado</span>
+                    </div>
+                    <div class="data-display">
+                        <span>📅</span> <span id="dataDisplay">--</span>
+                    </div>
+                    <div class="data-display">
+                        <span>⏱️</span> <span id="horaDisplay">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid Principal -->
+        <div class="main-grid">
+            <!-- Carga Líquida -->
+            <div class="carga-section">
+                <div class="section-title">
+                    <h2>Carga Líquida</h2>
+                    <div class="badge">ATUALIZADO</div>
+                </div>
+                
+                <div class="carga-grid">
+                    <!-- Água Doce -->
+                    <div class="carga-item water">
+                        <div class="carga-header">
+                            <span class="carga-label">Água Doce</span>
+                            <span class="carga-valor"><span id="aguaValor">0</span><span class="carga-unidade">m³</span></span>
+                        </div>
+                        <div class="carga-bar">
+                            <div class="carga-bar-fill water" id="aguaBar" style="width: 0%"></div>
+                        </div>
+                        <div class="carga-footer">
+                            <span class="carga-percent" id="aguaPercent">0%</span>
+                            <span class="capacidade">Cap: <span id="aguaMax">551.95</span> m³</span>
+                        </div>
+                    </div>
+
+                    <!-- Óleo Lub -->
+                    <div class="carga-item luboil">
+                        <div class="carga-header">
+                            <span class="carga-label">Óleo Lub</span>
+                            <span class="carga-valor"><span id="lubValor">0</span><span class="carga-unidade">m³</span></span>
+                        </div>
+                        <div class="carga-bar">
+                            <div class="carga-bar-fill luboil" id="lubBar" style="width: 0%"></div>
+                        </div>
+                        <div class="carga-footer">
+                            <span class="carga-percent" id="lubPercent">0%</span>
+                            <span class="capacidade">Cap: <span id="lubMax">80.313</span> m³</span>
+                        </div>
+                    </div>
+
+                    <!-- Óleo Comb -->
+                    <div class="carga-item fueloil">
+                        <div class="carga-header">
+                            <span class="carga-label">Óleo Comb</span>
+                            <span class="carga-valor"><span id="combValor">0</span><span class="carga-unidade">m³</span></span>
+                        </div>
+                        <div class="carga-bar">
+                            <div class="carga-bar-fill fueloil" id="combBar" style="width: 0%"></div>
+                        </div>
+                        <div class="carga-footer">
+                            <span class="carga-percent" id="combPercent">0%</span>
+                            <span class="capacidade">Cap: <span id="combMax">1775.16</span> m³</span>
+                        </div>
+                    </div>
+
+                    <!-- JP-5 -->
+                    <div class="carga-item jp5">
+                        <div class="carga-header">
+                            <span class="carga-label">JP-5 (AV)</span>
+                            <span class="carga-valor"><span id="jp5Valor">0</span><span class="carga-unidade">m³</span></span>
+                        </div>
+                        <div class="carga-bar">
+                            <div class="carga-bar-fill jp5" id="jp5Bar" style="width: 0%"></div>
+                        </div>
+                        <div class="carga-footer">
+                            <span class="carga-percent" id="jp5Percent">0%</span>
+                            <span class="capacidade">Cap: <span id="jp5Max">427.5</span> m³</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipamentos -->
+            <div class="equipamentos-section">
+                <div class="equipamentos-header">
+                    <h2>Status dos Equipamentos</h2>
+                    <div class="total-badge" id="totalEquipamentos">0</div>
+                </div>
+                
+                <div class="equipamentos-grid" id="equipamentosGrid"></div>
+                
+                <!-- Legenda -->
+                <div class="legenda">
+                    <div class="legenda-item"><div class="legenda-cor verde"></div> Na Linha</div>
+                    <div class="legenda-item"><div class="legenda-cor azul"></div> De Serviço</div>
+                    <div class="legenda-item"><div class="legenda-cor amarela"></div> Restrição</div>
+                    <div class="legenda-item"><div class="legenda-cor cinza"></div> Disponível</div>
+                    <div class="legenda-item"><div class="legenda-cor vermelho"></div> Indisponível</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configurações (mesmas do app React)
+        const STATUS_MAP = [
+            { classe: 'verde', texto: 'NA LINHA' },
+            { classe: 'azul', texto: 'DE SERVIÇO' },
+            { classe: 'amarela', texto: 'RESTRIÇÃO' },
+            { classe: 'cinza', texto: 'DISPONÍVEL' },
+            { classe: 'vermelho', texto: 'INDISPONÍVEL' }
+        ];
+
+        const EQUIPAMENTOS = [
+            "MCP BB", "MCP BE", "MCA 1", "MCA 2", "MCA 3", "MCA 4", "Gerador de Emerg", 
+            "URA 1", "URA 2", "URA 3", "URA 4", "URA 5", "URA 6",
+            "GOR 1", "GOR 2", "GOR 3", "GOR 4", "DEMIN",
+            "Maquina do Leme BE 1", "Maquina do Leme BE 2", 
+            "Maquina do Leme BB 1", "Maquina do Leme BB 2",
+            "HPSW 1", "HPSW 2", "HPSW 3", "HPSW 4", "HPSW 5",
+            "LPSW 1", "LPSW 2", "LPSW 3", "LPSW 4",
+            "Bomba de Serviço 1", "Bomba de Serviço 2", "Bomba de Serviço 3",
+            "MotoBomba 1", "MotoBomba 2", "MotoBomba 3", "MotoBomba 4",
+            "CAP 1", "CAP 2", "CAP 3", "CMP 1", "CMP 2", "CMP de Emergência",
+            "CBP 1", "CBP 2", "CBP 3", "CBP 4",
+            "Planta Frigorífica 1", "Planta Frigorífica 2",
+            "Estabilizador BB", "Estabilizador BE", 
+            "BAG 1", "BAG 2", "BAG 3", "BAG 4",
+            "BOILER 1", "BOILER 2", "BOILER 3", "BOILER 4",
+            "Bomba de Água Quente 1", "Bomba de Água Quente 2",
+            "Separador de Óleo/Água",
+            "Purificador Óleo Comb 1", "Purificador Óleo Comb 2",
+            "Purificador Óleo Lub 1", "Purificador Óleo Lub 2",
+            "Purificador Redutora 1", "Purificador Redutora 2",
+            "Purificador Óleo Lub GER Diesel",
+            "Elevador de Aeronaves AV", "Elevador de Aeronaves AR",
+            "Guindaste", "Container 1", "Container 2", "Container 3",
+            "Proteção Catódica AV", "Proteção Catódica AR"
+        ];
+
+        class TVMonitor {
+            constructor() {
+                this.estadosEquipamentos = {};
+                this.dadosCombustivel = {
+                    agua: { valor: 0, max: 551.95 },
+                    lub: { valor: 0, max: 80.313 },
+                    comb: { valor: 0, max: 1775.16 },
+                    jp5: { valor: 0, max: 427.5 }
+                };
+                this.dataAtual = null;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    document.getElementById('loading').style.display = 'flex';
+                    
+                    this.carregarData();
+                    this.carregarEstadosEquipamentos();
+                    this.carregarCombustivel();
+                    
+                    this.criarGridEquipamentos();
+                    
+                    this.initStorageListener();
+                    this.initTimeUpdate();
+                    
+                    this.atualizarInterface();
+                    
+                } catch (error) {
+                    console.error('Erro:', error);
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+
+            carregarData() {
+                this.dataAtual = localStorage.getItem('dataControle') || new Date().toISOString().split('T')[0];
+                document.getElementById('dataDisplay').textContent = this.formatarData(this.dataAtual);
+            }
+
+            formatarData(dataString) {
+                try {
+                    const data = new Date(dataString + 'T00:00:00');
+                    return data.toLocaleDateString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric'
+                    });
+                } catch {
+                    return dataString;
+                }
+            }
+
+            carregarEstadosEquipamentos() {
+                try {
+                    const dataKey = `estados_${this.dataAtual}`;
+                    const saved = localStorage.getItem(dataKey);
+                    
+                    if (saved) {
+                        this.estadosEquipamentos = JSON.parse(saved);
+                        document.getElementById('syncDot').className = 'sync-dot';
+                        document.getElementById('syncText').textContent = 'Conectado';
+                    } else {
+                        this.estadosEquipamentos = {};
+                        document.getElementById('syncDot').className = 'sync-dot disconnected';
+                        document.getElementById('syncText').textContent = 'Aguardando';
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar equipamentos:', error);
+                }
+            }
+
+            carregarCombustivel() {
+                try {
+                    const reportKey = `report_${this.dataAtual}`;
+                    const saved = localStorage.getItem(reportKey);
+                    
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        if (data.fuel) {
+                            this.dadosCombustivel = {
+                                agua: { valor: data.fuel.water || 0, max: data.fuel.maxWater || 551.95 },
+                                lub: { valor: data.fuel.lubOil || 0, max: data.fuel.maxLubOil || 80.313 },
+                                comb: { valor: data.fuel.fuelOil || 0, max: data.fuel.maxFuelOil || 1775.16 },
+                                jp5: { valor: data.fuel.jp5 || 0, max: data.fuel.maxJp5 || 427.5 }
+                            };
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar combustível:', error);
+                }
+            }
+
+            criarGridEquipamentos() {
+                const grid = document.getElementById('equipamentosGrid');
+                grid.innerHTML = '';
+
+                EQUIPAMENTOS.forEach((equipamento, index) => {
+                    const estadoIndex = this.estadosEquipamentos[equipamento] ?? 3;
+                    const status = STATUS_MAP[estadoIndex] || STATUS_MAP[3];
+                    
+                    const card = document.createElement('div');
+                    card.className = `equipamento-card ${status.classe}`;
+                    card.id = `equip-${index}`;
+                    
+                    card.innerHTML = `
+                        <div class="status-indicator ${status.classe}"></div>
+                        <div class="equipamento-nome">${equipamento}</div>
+                        <div class="equipamento-status">${status.texto}</div>
+                    `;
+                    
+                    grid.appendChild(card);
+                });
+                
+                document.getElementById('totalEquipamentos').textContent = EQUIPAMENTOS.length;
+            }
+
+            atualizarEquipamentos() {
+                EQUIPAMENTOS.forEach((equipamento, index) => {
+                    const estadoIndex = this.estadosEquipamentos[equipamento] ?? 3;
+                    const status = STATUS_MAP[estadoIndex] || STATUS_MAP[3];
+                    
+                    const card = document.getElementById(`equip-${index}`);
+                    if (card) {
+                        card.className = `equipamento-card ${status.classe}`;
+                        
+                        const indicator = card.querySelector('.status-indicator');
+                        if (indicator) indicator.className = `status-indicator ${status.classe}`;
+                        
+                        const statusText = card.querySelector('.equipamento-status');
+                        if (statusText) statusText.textContent = status.texto;
+                    }
+                });
+            }
+
+            atualizarCombustivel() {
+                // Água
+                document.getElementById('aguaValor').textContent = this.dadosCombustivel.agua.valor.toFixed(1);
+                document.getElementById('aguaMax').textContent = this.dadosCombustivel.agua.max.toFixed(1);
+                const aguaPercent = (this.dadosCombustivel.agua.valor / this.dadosCombustivel.agua.max) * 100;
+                document.getElementById('aguaBar').style.width = `${Math.min(aguaPercent, 100)}%`;
+                document.getElementById('aguaPercent').textContent = `${Math.min(aguaPercent, 100).toFixed(1)}%`;
+
+                // Óleo Lub
+                document.getElementById('lubValor').textContent = this.dadosCombustivel.lub.valor.toFixed(1);
+                document.getElementById('lubMax').textContent = this.dadosCombustivel.lub.max.toFixed(1);
+                const lubPercent = (this.dadosCombustivel.lub.valor / this.dadosCombustivel.lub.max) * 100;
+                document.getElementById('lubBar').style.width = `${Math.min(lubPercent, 100)}%`;
+                document.getElementById('lubPercent').textContent = `${Math.min(lubPercent, 100).toFixed(1)}%`;
+
+                // Óleo Comb
+                document.getElementById('combValor').textContent = this.dadosCombustivel.comb.valor.toFixed(1);
+                document.getElementById('combMax').textContent = this.dadosCombustivel.comb.max.toFixed(1);
+                const combPercent = (this.dadosCombustivel.comb.valor / this.dadosCombustivel.comb.max) * 100;
+                document.getElementById('combBar').style.width = `${Math.min(combPercent, 100)}%`;
+                document.getElementById('combPercent').textContent = `${Math.min(combPercent, 100).toFixed(1)}%`;
+
+                // JP-5
+                document.getElementById('jp5Valor').textContent = this.dadosCombustivel.jp5.valor.toFixed(1);
+                document.getElementById('jp5Max').textContent = this.dadosCombustivel.jp5.max.toFixed(1);
+                const jp5Percent = (this.dadosCombustivel.jp5.valor / this.dadosCombustivel.jp5.max) * 100;
+                document.getElementById('jp5Bar').style.width = `${Math.min(jp5Percent, 100)}%`;
+                document.getElementById('jp5Percent').textContent = `${Math.min(jp5Percent, 100).toFixed(1)}%`;
+            }
+
+            atualizarInterface() {
+                this.atualizarEquipamentos();
+                this.atualizarCombustivel();
+                this.atualizarHora();
+            }
+
+            atualizarHora() {
+                const agora = new Date();
+                document.getElementById('horaDisplay').textContent = 
+                    agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+
+            initStorageListener() {
+                window.addEventListener('storage', (event) => {
+                    if (event.key === `estados_${this.dataAtual}`) {
+                        try {
+                            this.estadosEquipamentos = JSON.parse(event.newValue) || {};
+                            this.atualizarEquipamentos();
+                            document.getElementById('syncDot').className = 'sync-dot';
+                            document.getElementById('syncText').textContent = 'Conectado';
+                        } catch (e) {}
+                    }
+                    
+                    if (event.key === `report_${this.dataAtual}`) {
+                        try {
+                            const data = JSON.parse(event.newValue);
+                            if (data.fuel) {
+                                this.dadosCombustivel = {
+                                    agua: { valor: data.fuel.water || 0, max: data.fuel.maxWater || 551.95 },
+                                    lub: { valor: data.fuel.lubOil || 0, max: data.fuel.maxLubOil || 80.313 },
+                                    comb: { valor: data.fuel.fuelOil || 0, max: data.fuel.maxFuelOil || 1775.16 },
+                                    jp5: { valor: data.fuel.jp5 || 0, max: data.fuel.maxJp5 || 427.5 }
+                                };
+                                this.atualizarCombustivel();
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    if (event.key === 'dataControle' && event.newValue !== this.dataAtual) {
+                        this.dataAtual = event.newValue;
+                        document.getElementById('dataDisplay').textContent = this.formatarData(this.dataAtual);
+                        this.carregarEstadosEquipamentos();
+                        this.carregarCombustivel();
+                        this.atualizarInterface();
+                    }
+                });
+            }
+
+            initTimeUpdate() {
+                setInterval(() => this.atualizarHora(), 1000);
+                setInterval(() => {
+                    this.carregarEstadosEquipamentos();
+                    this.carregarCombustivel();
+                    this.atualizarInterface();
+                }, 2000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new TVMonitor();
+        });
+    </script>
+</body>
+</html>
