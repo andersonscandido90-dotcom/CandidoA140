@@ -233,7 +233,7 @@ const PersonnelView: React.FC<{
   );
 };
 
-// ========== INICIALIZAÇÃO SÍNCRONA (ANTES DE MONTAR O COMPONENTE) ==========
+// ========== INICIALIZAÇÃO SÍNCRONA ==========
 const initializeAppData = () => {
   let savedDate = localStorage.getItem('selected_date') || new Date().toISOString().split('T')[0];
   console.log('📅 Data salva encontrada:', savedDate);
@@ -287,7 +287,6 @@ const initializeAppData = () => {
 };
 
 const App: React.FC = () => {
-  // ⬇️ Inicialização síncrona (não depende de useEffect)
   const { savedDate, report: initialReport } = initializeAppData();
 
   const [selectedDate, setSelectedDate] = useState<string>(savedDate);
@@ -318,7 +317,6 @@ const App: React.FC = () => {
     { id: 'personnel', icon: <Users size={18} />, label: 'Quarto de Serviço' }
   ], []);
 
-  // Atualiza data manualmente (salva no localStorage e carrega dados correspondentes)
   const updateSelectedDate = (newDate: string) => {
     setSelectedDate(newDate);
     localStorage.setItem('selected_date', newDate);
@@ -337,7 +335,6 @@ const App: React.FC = () => {
         console.log('✅ Dados carregados para', newDate);
       } catch (e) { console.error(e); }
     } else {
-      // Se não existe, limpa estados (mas não apaga localStorage)
       setEquipmentData({});
       setFuelData(DEFAULT_FUEL);
       setStabilityData(DEFAULT_STABILITY);
@@ -463,7 +460,7 @@ const App: React.FC = () => {
 
   // 📤 Exportar JSON
   const handleExportJSON = () => {
-    saveCurrentReport(); // garante que o mais recente está salvo
+    saveCurrentReport();
     const relatorio: DailyReport = {
       date: selectedDate,
       equipment: equipmentData,
@@ -657,19 +654,20 @@ const App: React.FC = () => {
               />
             </div>
 
+            {/* ⬇️ Ícones invertidos conforme solicitado */}
             <button
               onClick={handleExportJSON}
               className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] rounded-xl uppercase transition-all flex items-center gap-1.5"
               title="Exportar relatório do dia"
             >
-              <Download size={14} /> Exportar
+              <Upload size={14} /> Exportar
             </button>
             <button
               onClick={handleImportJSON}
               className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] rounded-xl uppercase transition-all flex items-center gap-1.5"
               title="Importar relatório"
             >
-              <Upload size={14} /> Importar
+              <Download size={14} /> Importar
             </button>
           </div>
         </header>
