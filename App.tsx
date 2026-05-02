@@ -60,7 +60,6 @@ const ShipLogo = memo(({ className = "w-24 h-auto", customUrl }: { className?: s
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Tenta carregar a imagem personalizada ou a padrão
   const logoSrc = customUrl || SHIP_CONFIG.badgeUrl;
   
   return (
@@ -83,15 +82,12 @@ const ShipLogo = memo(({ className = "w-24 h-auto", customUrl }: { className?: s
             setImageError(true);
             setIsLoading(false);
             
-            // Fallback para um SVG naval com fundo transparente
             e.currentTarget.style.display = 'none';
             const parent = e.currentTarget.parentElement;
             if (parent) {
-              // Remove qualquer fallback anterior
               const existingFallback = parent.querySelector('.fallback-icon');
               if (existingFallback) existingFallback.remove();
               
-              // Cria um ícone SVG naval elegante
               const icon = document.createElement('div');
               icon.className = "fallback-icon p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-2xl";
               icon.innerHTML = `
@@ -107,7 +103,6 @@ const ShipLogo = memo(({ className = "w-24 h-auto", customUrl }: { className?: s
           }}
         />
       ) : (
-        // Fallback SVG naval elegante
         <div className="fallback-icon p-3 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-2xl">
           <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255,255,255,0.1)"/>
@@ -128,7 +123,6 @@ const PersonnelView: React.FC<{
   const shifts = ["08:00 às 12:00", "12:00 às 16:00", "16:00 às 20:00"];
   const [serviceNotes, setServiceNotes] = useState<string>('');
 
-  // Carrega anotações salvas
   React.useEffect(() => {
     const savedNotes = localStorage.getItem('service_notes');
     if (savedNotes) {
@@ -136,7 +130,6 @@ const PersonnelView: React.FC<{
     }
   }, []);
 
-  // Salva automaticamente
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newNotes = e.target.value;
     setServiceNotes(newNotes);
@@ -191,7 +184,6 @@ const PersonnelView: React.FC<{
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      {/* Grid existente com os campos de pessoal */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
         <div className="space-y-6 sm:space-y-8">
           <h3 className="font-black flex items-center gap-4 text-white uppercase text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6">
@@ -214,7 +206,6 @@ const PersonnelView: React.FC<{
         </div>
       </div>
 
-      {/* NOVA CAIXA DE TEXTO - ANOTAÇÕES DO SERVIÇO */}
       <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] mt-8">
         <div className="flex items-center gap-4 mb-6">
           <div className="p-3 bg-indigo-600/20 rounded-xl">
@@ -228,7 +219,7 @@ const PersonnelView: React.FC<{
         <textarea
           value={serviceNotes}
           onChange={handleNotesChange}
-          placeholder="Digite aqui observações gerais, ocorrências, lembretes, procedimentos ou qualquer informação relevante para o serviço..."
+          placeholder="Digite aqui observações gerais..."
           className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 font-mono text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none transition-all resize-y min-h-[200px] text-base"
         />
         
@@ -243,10 +234,11 @@ const PersonnelView: React.FC<{
 };
 
 const App: React.FC = () => {
-  // Inicializa selectedDate com o valor salvo no localStorage, se existir
+  // 1️⃣ Inicializa a data com o valor salvo, se não existir, usa hoje
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const savedDate = localStorage.getItem('selected_date');
-    return savedDate || new Date().toISOString().split('T')[0];
+    const saved = localStorage.getItem('selected_date');
+    console.log('📅 Data salva encontrada:', saved);
+    return saved || new Date().toISOString().split('T')[0];
   });
 
   const [equipmentData, setEquipmentData] = useState<EquipmentData>({});
@@ -276,12 +268,16 @@ const App: React.FC = () => {
     { id: 'personnel', icon: <Users size={18} />, label: 'Quarto de Serviço' }
   ], []);
 
-  // Persiste a data selecionada sempre que mudar
-  useEffect(() => {
-    localStorage.setItem('selected_date', selectedDate);
-  }, [selectedDate]);
+  // 🔁 Salva a data imediatamente toda vez que mudar (garantia extra)
+  const updateSelectedDate = (newDate: string) => {
+    setSelectedDate(newDate);
+    localStorage.setItem('selected_date', newDate);
+    console.log('💾 Data salva manualmente:', newDate);
+  };
 
+  // 2️⃣ Carrega o relatório da data selecionada
   useEffect(() => {
+    console.log('🔍 Carregando dados para a data:', selectedDate);
     const saved = localStorage.getItem(`report_${selectedDate}`);
     const masterReasonsStr = localStorage.getItem('master_equipment_reasons');
     const masterReasons = masterReasonsStr ? JSON.parse(masterReasonsStr) : {};
@@ -295,6 +291,7 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const data = JSON.parse(saved) as DailyReport;
+        console.log('✅ Relatório encontrado:', data);
         setEquipmentData(data.equipment || {});
         setFuelData(data.fuel || DEFAULT_FUEL);
         setStabilityData(data.stability || DEFAULT_STABILITY);
@@ -304,16 +301,31 @@ const App: React.FC = () => {
         setIsisOverrides(masterIsis);
         const mergedReasons = { ...masterReasons, ...(data.restrictionReasons || {}) };
         setRestrictionReasons(mergedReasons);
-      } catch (e) { console.error("Erro ao carregar dados locais"); }
+      } catch (e) { 
+        console.error("❌ Erro ao carregar dados locais", e);
+      }
     } else {
-      setEquipmentData({});
-      setFuelData(DEFAULT_FUEL);
-      setStabilityData(DEFAULT_STABILITY);
-      setPersonnelData(DEFAULT_PERSONNEL);
-      setEductorStatuses({});
-      setLogs([]);
-      setIsisOverrides(masterIsis);
-      setRestrictionReasons(masterReasons);
+      console.warn('⚠️ Nenhum relatório para essa data. Tentando último disponível...');
+      // 3️⃣ Fallback: procura o relatório mais recente no localStorage
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('report_'));
+      if (allKeys.length > 0) {
+        const lastKey = allKeys.sort().reverse()[0];
+        const fallbackDate = lastKey.replace('report_', '');
+        console.log('🔄 Carregando relatório mais recente:', fallbackDate);
+        const fallbackData = JSON.parse(localStorage.getItem(lastKey)!) as DailyReport;
+        setSelectedDate(fallbackDate);
+        localStorage.setItem('selected_date', fallbackDate);
+        setEquipmentData(fallbackData.equipment || {});
+        setFuelData(fallbackData.fuel || DEFAULT_FUEL);
+        setStabilityData(fallbackData.stability || DEFAULT_STABILITY);
+        setPersonnelData(fallbackData.personnel || DEFAULT_PERSONNEL);
+        setRestrictionReasons({ ...masterReasons, ...(fallbackData.restrictionReasons || {}) });
+        setEductorStatuses(fallbackData.eductorStatuses || {});
+        setIsisOverrides(masterIsis);
+        setLogs(fallbackData.logs || []);
+      } else {
+        console.log('📭 Nenhum relatório encontrado, iniciando vazio.');
+      }
     }
   }, [selectedDate]);
 
@@ -343,6 +355,7 @@ const App: React.FC = () => {
     if (updates.logs) setLogs(updates.logs);
 
     localStorage.setItem(`report_${selectedDate}`, JSON.stringify(newReport));
+    console.log('💾 Relatório salvo:', selectedDate);
     
     if (updates.restrictionReasons) {
       const masterReasonsStr = localStorage.getItem('master_equipment_reasons');
@@ -458,7 +471,7 @@ const App: React.FC = () => {
             `(OK = muda para a data do arquivo, Cancelar = mantém data atual)`
           );
           if (usarDataOriginal) {
-            setSelectedDate(dados.date);
+            updateSelectedDate(dados.date);  // 🔁 salva data imediatamente
           }
           setEquipmentData(dados.equipment);
           setFuelData(dados.fuel);
@@ -528,7 +541,6 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex ${currentTheme} text-slate-100 selection:bg-blue-600 relative overflow-x-hidden transition-colors duration-700`}>
-      {/* Menu Backdrop para mobile */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[45] lg:hidden animate-in fade-in duration-300"
@@ -601,10 +613,14 @@ const App: React.FC = () => {
 
             <div className="bg-slate-900 px-3 py-2 sm:px-4 sm:py-2 rounded-xl flex items-center gap-2 sm:gap-3 border border-slate-800 shadow-inner">
               <Calendar size={14} className="text-blue-500 shrink-0" />
-              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-transparent font-black text-white text-[10px] sm:text-xs outline-none w-[100px] sm:w-auto" />
+              <input 
+                type="date" 
+                value={selectedDate} 
+                onChange={e => updateSelectedDate(e.target.value)}  // 🔁 salva na hora
+                className="bg-transparent font-black text-white text-[10px] sm:text-xs outline-none w-[100px] sm:w-auto" 
+              />
             </div>
 
-            {/* Botões de exportar/importar */}
             <button
               onClick={handleExportJSON}
               className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] rounded-xl uppercase transition-all flex items-center gap-1.5"
@@ -641,7 +657,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Input oculto para upload de logo */}
       <input
         type="file"
         ref={fileInputRef}
