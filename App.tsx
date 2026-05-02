@@ -243,7 +243,12 @@ const PersonnelView: React.FC<{
 };
 
 const App: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  // Inicializa selectedDate com o valor salvo no localStorage, se existir
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const savedDate = localStorage.getItem('selected_date');
+    return savedDate || new Date().toISOString().split('T')[0];
+  });
+
   const [equipmentData, setEquipmentData] = useState<EquipmentData>({});
   const [fuelData, setFuelData] = useState<FuelData>(DEFAULT_FUEL);
   const [stabilityData, setStabilityData] = useState<StabilityData>(DEFAULT_STABILITY);
@@ -270,6 +275,11 @@ const App: React.FC = () => {
     { id: 'isis', icon: <Monitor size={18} />, label: 'ISIS' },
     { id: 'personnel', icon: <Users size={18} />, label: 'Quarto de Serviço' }
   ], []);
+
+  // Persiste a data selecionada sempre que mudar
+  useEffect(() => {
+    localStorage.setItem('selected_date', selectedDate);
+  }, [selectedDate]);
 
   useEffect(() => {
     const saved = localStorage.getItem(`report_${selectedDate}`);
