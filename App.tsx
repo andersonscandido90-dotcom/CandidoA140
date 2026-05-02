@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, memo } from 'react';
+import React, { useState, useMemo, useRef, memo } from 'react';
 import { 
   Activity, 
   Droplets, 
@@ -20,7 +20,7 @@ import {
   Upload
 } from 'lucide-react';
 import { EquipmentStatus, DailyReport, FuelData, EquipmentData, StabilityData, PersonnelData, LogEntry } from './types';
-import { CATEGORIES, SHIP_CONFIG, STATUS_CONFIG } from './constants';
+import { CATEGORIES, SHIP_CONFIG } from './constants';
 import EquipmentSection from './components/EquipmentSection';
 import FuelPanel from './components/FuelPanel';
 import StabilityPanel from './components/StabilityPanel';
@@ -219,7 +219,7 @@ const PersonnelView: React.FC<{
         <textarea
           value={serviceNotes}
           onChange={handleNotesChange}
-          placeholder="Digite aqui observações gerais..."
+          placeholder="Digite aqui observações gerais, ocorrências, lembretes, procedimentos ou qualquer informação relevante para o serviço..."
           className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 font-mono text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none transition-all resize-y min-h-[200px] text-base"
         />
         
@@ -233,23 +233,73 @@ const PersonnelView: React.FC<{
   );
 };
 
-const App: React.FC = () => {
-  // 1️⃣ Inicializa a data com o valor salvo, se não existir, usa hoje
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const saved = localStorage.getItem('selected_date');
-    console.log('📅 Data salva encontrada:', saved);
-    return saved || new Date().toISOString().split('T')[0];
-  });
+// ========== INICIALIZAÇÃO SÍNCRONA (ANTES DE MONTAR O COMPONENTE) ==========
+const initializeAppData = () => {
+  let savedDate = localStorage.getItem('selected_date') || new Date().toISOString().split('T')[0];
+  console.log('📅 Data salva encontrada:', savedDate);
 
-  const [equipmentData, setEquipmentData] = useState<EquipmentData>({});
-  const [fuelData, setFuelData] = useState<FuelData>(DEFAULT_FUEL);
-  const [stabilityData, setStabilityData] = useState<StabilityData>(DEFAULT_STABILITY);
-  const [personnelData, setPersonnelData] = useState<PersonnelData>(DEFAULT_PERSONNEL);
-  const [restrictionReasons, setRestrictionReasons] = useState<Record<string, string>>({});
-  const [eductorStatuses, setEductorStatuses] = useState<Record<string, boolean>>({});
-  const [isisOverrides, setIsisOverrides] = useState<Record<string, string>>({});
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [currentTheme, setCurrentTheme] = useState<string>('bg-slate-950');
+  let report: DailyReport | null = null;
+  const savedReport = localStorage.getItem(`report_${savedDate}`);
+  if (savedReport) {
+    try {
+      report = JSON.parse(savedReport) as DailyReport;
+      console.log('✅ Relatório carregado para', savedDate, report);
+    } catch (e) {
+      console.error('❌ Erro ao parsear relatório:', e);
+    }
+  }
+
+  if (!report) {
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith('report_'));
+    if (allKeys.length > 0) {
+      const lastKey = allKeys.sort().reverse()[0];
+      const fallbackDate = lastKey.replace('report_', '');
+      const fallbackData = localStorage.getItem(lastKey);
+      if (fallbackData) {
+        try {
+          report = JSON.parse(fallbackData) as DailyReport;
+          savedDate = fallbackDate;
+          localStorage.setItem('selected_date', savedDate);
+          console.log('🔄 Usando último relatório disponível:', savedDate);
+        } catch (e) {
+          console.error('❌ Erro no fallback:', e);
+        }
+      }
+    }
+  }
+
+  if (!report) {
+    console.log('📭 Nenhum relatório salvo – iniciando vazio.');
+    report = {
+      date: savedDate,
+      equipment: {},
+      fuel: DEFAULT_FUEL,
+      stability: DEFAULT_STABILITY,
+      personnel: DEFAULT_PERSONNEL,
+      restrictionReasons: {},
+      eductorStatuses: {},
+      isisOverrides: {},
+      logs: []
+    };
+  }
+
+  return { savedDate, report };
+};
+
+const App: React.FC = () => {
+  // ⬇️ Inicialização síncrona (não depende de useEffect)
+  const { savedDate, report: initialReport } = initializeAppData();
+
+  const [selectedDate, setSelectedDate] = useState<string>(savedDate);
+  const [equipmentData, setEquipmentData] = useState<EquipmentData>(initialReport.equipment);
+  const [fuelData, setFuelData] = useState<FuelData>(initialReport.fuel);
+  const [stabilityData, setStabilityData] = useState<StabilityData>(initialReport.stability);
+  const [personnelData, setPersonnelData] = useState<PersonnelData>(initialReport.personnel);
+  const [restrictionReasons, setRestrictionReasons] = useState<Record<string, string>>(initialReport.restrictionReasons);
+  const [eductorStatuses, setEductorStatuses] = useState<Record<string, boolean>>(initialReport.eductorStatuses);
+  const [isisOverrides, setIsisOverrides] = useState<Record<string, string>>(initialReport.isisOverrides);
+  const [logs, setLogs] = useState<LogEntry[]>(initialReport.logs);
+  const [currentTheme, setCurrentTheme] = useState<string>(localStorage.getItem('app_theme') || 'bg-slate-950');
   const [view, setView] = useState<'menu-inicial' | 'equipment' | 'fuel' | 'stability' | 'personnel' | 'tv-mode' | 'cav' | 'restrictions' | 'isis'>('menu-inicial');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTvSlide, setCurrentTvSlide] = useState(0);
@@ -268,80 +318,55 @@ const App: React.FC = () => {
     { id: 'personnel', icon: <Users size={18} />, label: 'Quarto de Serviço' }
   ], []);
 
-  // 🔁 Salva a data imediatamente toda vez que mudar (garantia extra)
+  // Atualiza data manualmente (salva no localStorage e carrega dados correspondentes)
   const updateSelectedDate = (newDate: string) => {
     setSelectedDate(newDate);
     localStorage.setItem('selected_date', newDate);
-    console.log('💾 Data salva manualmente:', newDate);
-  };
-
-  // 2️⃣ Carrega o relatório da data selecionada
-  useEffect(() => {
-    console.log('🔍 Carregando dados para a data:', selectedDate);
-    const saved = localStorage.getItem(`report_${selectedDate}`);
-    const masterReasonsStr = localStorage.getItem('master_equipment_reasons');
-    const masterReasons = masterReasonsStr ? JSON.parse(masterReasonsStr) : {};
-    
-    const savedIsisStr = localStorage.getItem('master_isis_overrides');
-    const masterIsis = savedIsisStr ? JSON.parse(savedIsisStr) : {};
-    
-    const savedTheme = localStorage.getItem('app_theme');
-    if (savedTheme) setCurrentTheme(savedTheme);
-
+    const saved = localStorage.getItem(`report_${newDate}`);
     if (saved) {
       try {
         const data = JSON.parse(saved) as DailyReport;
-        console.log('✅ Relatório encontrado:', data);
-        setEquipmentData(data.equipment || {});
-        setFuelData(data.fuel || DEFAULT_FUEL);
-        setStabilityData(data.stability || DEFAULT_STABILITY);
+        setEquipmentData(data.equipment);
+        setFuelData(data.fuel);
+        setStabilityData(data.stability);
         setPersonnelData(data.personnel || DEFAULT_PERSONNEL);
+        setRestrictionReasons(data.restrictionReasons || {});
         setEductorStatuses(data.eductorStatuses || {});
+        setIsisOverrides(data.isisOverrides || {});
         setLogs(data.logs || []);
-        setIsisOverrides(masterIsis);
-        const mergedReasons = { ...masterReasons, ...(data.restrictionReasons || {}) };
-        setRestrictionReasons(mergedReasons);
-      } catch (e) { 
-        console.error("❌ Erro ao carregar dados locais", e);
-      }
+        console.log('✅ Dados carregados para', newDate);
+      } catch (e) { console.error(e); }
     } else {
-      console.warn('⚠️ Nenhum relatório para essa data. Tentando último disponível...');
-      // 3️⃣ Fallback: procura o relatório mais recente no localStorage
-      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('report_'));
-      if (allKeys.length > 0) {
-        const lastKey = allKeys.sort().reverse()[0];
-        const fallbackDate = lastKey.replace('report_', '');
-        console.log('🔄 Carregando relatório mais recente:', fallbackDate);
-        const fallbackData = JSON.parse(localStorage.getItem(lastKey)!) as DailyReport;
-        setSelectedDate(fallbackDate);
-        localStorage.setItem('selected_date', fallbackDate);
-        setEquipmentData(fallbackData.equipment || {});
-        setFuelData(fallbackData.fuel || DEFAULT_FUEL);
-        setStabilityData(fallbackData.stability || DEFAULT_STABILITY);
-        setPersonnelData(fallbackData.personnel || DEFAULT_PERSONNEL);
-        setRestrictionReasons({ ...masterReasons, ...(fallbackData.restrictionReasons || {}) });
-        setEductorStatuses(fallbackData.eductorStatuses || {});
-        setIsisOverrides(masterIsis);
-        setLogs(fallbackData.logs || []);
-      } else {
-        console.log('📭 Nenhum relatório encontrado, iniciando vazio.');
-      }
+      // Se não existe, limpa estados (mas não apaga localStorage)
+      setEquipmentData({});
+      setFuelData(DEFAULT_FUEL);
+      setStabilityData(DEFAULT_STABILITY);
+      setPersonnelData(DEFAULT_PERSONNEL);
+      setRestrictionReasons({});
+      setEductorStatuses({});
+      setIsisOverrides({});
+      setLogs([]);
+      console.log('📭 Nenhum dado para', newDate);
     }
-  }, [selectedDate]);
+  };
+
+  const saveCurrentReport = () => {
+    const report: DailyReport = {
+      date: selectedDate,
+      equipment: equipmentData,
+      fuel: fuelData,
+      stability: stabilityData,
+      personnel: personnelData,
+      restrictionReasons,
+      eductorStatuses,
+      isisOverrides,
+      logs
+    };
+    localStorage.setItem(`report_${selectedDate}`, JSON.stringify(report));
+    console.log('💾 Relatório salvo:', selectedDate);
+  };
 
   const saveData = (updates: Partial<DailyReport>) => {
-    const newReport: DailyReport = {
-      date: selectedDate,
-      equipment: updates.equipment !== undefined ? updates.equipment : equipmentData,
-      fuel: updates.fuel !== undefined ? updates.fuel : fuelData,
-      stability: updates.stability !== undefined ? updates.stability : stabilityData,
-      personnel: updates.personnel !== undefined ? updates.personnel : personnelData,
-      restrictionReasons: updates.restrictionReasons !== undefined ? updates.restrictionReasons : restrictionReasons,
-      eductorStatuses: updates.eductorStatuses !== undefined ? updates.eductorStatuses : eductorStatuses,
-      isisOverrides: updates.isisOverrides !== undefined ? updates.isisOverrides : isisOverrides,
-      logs: updates.logs !== undefined ? updates.logs : logs
-    };
-    
     if (updates.equipment) setEquipmentData(updates.equipment);
     if (updates.fuel) setFuelData(updates.fuel);
     if (updates.stability) setStabilityData(updates.stability);
@@ -354,9 +379,20 @@ const App: React.FC = () => {
     }
     if (updates.logs) setLogs(updates.logs);
 
-    localStorage.setItem(`report_${selectedDate}`, JSON.stringify(newReport));
-    console.log('💾 Relatório salvo:', selectedDate);
-    
+    const report: DailyReport = {
+      date: selectedDate,
+      equipment: updates.equipment !== undefined ? updates.equipment : equipmentData,
+      fuel: updates.fuel !== undefined ? updates.fuel : fuelData,
+      stability: updates.stability !== undefined ? updates.stability : stabilityData,
+      personnel: updates.personnel !== undefined ? updates.personnel : personnelData,
+      restrictionReasons: updates.restrictionReasons !== undefined ? updates.restrictionReasons : restrictionReasons,
+      eductorStatuses: updates.eductorStatuses !== undefined ? updates.eductorStatuses : eductorStatuses,
+      isisOverrides: updates.isisOverrides !== undefined ? updates.isisOverrides : isisOverrides,
+      logs: updates.logs !== undefined ? updates.logs : logs
+    };
+    localStorage.setItem(`report_${selectedDate}`, JSON.stringify(report));
+    console.log('💾 Relatório atualizado e salvo:', selectedDate);
+
     if (updates.restrictionReasons) {
       const masterReasonsStr = localStorage.getItem('master_equipment_reasons');
       const masterReasons = masterReasonsStr ? JSON.parse(masterReasonsStr) : {};
@@ -425,8 +461,9 @@ const App: React.FC = () => {
     }
   };
 
-  // 📤 Exportar o relatório do dia atual como .json
+  // 📤 Exportar JSON
   const handleExportJSON = () => {
+    saveCurrentReport(); // garante que o mais recente está salvo
     const relatorio: DailyReport = {
       date: selectedDate,
       equipment: equipmentData,
@@ -438,7 +475,6 @@ const App: React.FC = () => {
       isisOverrides,
       logs
     };
-
     const blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -450,7 +486,7 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // 📥 Importar arquivo .json e carregar no app
+  // 📥 Importar JSON
   const handleImportJSON = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -471,7 +507,7 @@ const App: React.FC = () => {
             `(OK = muda para a data do arquivo, Cancelar = mantém data atual)`
           );
           if (usarDataOriginal) {
-            updateSelectedDate(dados.date);  // 🔁 salva data imediatamente
+            updateSelectedDate(dados.date);
           }
           setEquipmentData(dados.equipment);
           setFuelData(dados.fuel);
@@ -616,7 +652,7 @@ const App: React.FC = () => {
               <input 
                 type="date" 
                 value={selectedDate} 
-                onChange={e => updateSelectedDate(e.target.value)}  // 🔁 salva na hora
+                onChange={e => updateSelectedDate(e.target.value)} 
                 className="bg-transparent font-black text-white text-[10px] sm:text-xs outline-none w-[100px] sm:w-auto" 
               />
             </div>
