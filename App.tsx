@@ -15,7 +15,9 @@ import {
   ShieldAlert,
   ClipboardList,
   Clock,
-  Palette
+  Palette,
+  Download,
+  Upload
 } from 'lucide-react';
 import { EquipmentStatus, DailyReport, FuelData, EquipmentData, StabilityData, PersonnelData, LogEntry } from './types';
 import { CATEGORIES, SHIP_CONFIG, STATUS_CONFIG } from './constants';
@@ -400,6 +402,82 @@ const App: React.FC = () => {
     }
   };
 
+  // 📤 Exportar o relatório do dia atual como .json
+  const handleExportJSON = () => {
+    const relatorio: DailyReport = {
+      date: selectedDate,
+      equipment: equipmentData,
+      fuel: fuelData,
+      stability: stabilityData,
+      personnel: personnelData,
+      restrictionReasons,
+      eductorStatuses,
+      isisOverrides,
+      logs
+    };
+
+    const blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relatorio_${selectedDate}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // 📥 Importar arquivo .json e carregar no app
+  const handleImportJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const dados = JSON.parse(e.target?.result as string) as DailyReport;
+          if (!dados.date || !dados.equipment || !dados.fuel) {
+            alert('Arquivo JSON inválido. Precisa ter os campos: date, equipment, fuel...');
+            return;
+          }
+          const usarDataOriginal = confirm(
+            `O arquivo contém dados do dia ${dados.date}. Manter essa data?\n` +
+            `(OK = muda para a data do arquivo, Cancelar = mantém data atual)`
+          );
+          if (usarDataOriginal) {
+            setSelectedDate(dados.date);
+          }
+          setEquipmentData(dados.equipment);
+          setFuelData(dados.fuel);
+          setStabilityData(dados.stability);
+          setPersonnelData(dados.personnel || DEFAULT_PERSONNEL);
+          setRestrictionReasons(dados.restrictionReasons || {});
+          setEductorStatuses(dados.eductorStatuses || {});
+          setIsisOverrides(dados.isisOverrides || {});
+          setLogs(dados.logs || []);
+          
+          localStorage.setItem(`report_${usarDataOriginal ? dados.date : selectedDate}`, JSON.stringify(dados));
+          if (dados.restrictionReasons) {
+            const masterReasonsStr = localStorage.getItem('master_equipment_reasons');
+            const masterReasons = masterReasonsStr ? JSON.parse(masterReasonsStr) : {};
+            localStorage.setItem('master_equipment_reasons', JSON.stringify({ ...masterReasons, ...dados.restrictionReasons }));
+          }
+          if (dados.isisOverrides) {
+            localStorage.setItem('master_isis_overrides', JSON.stringify(dados.isisOverrides));
+          }
+          alert('Relatório importado com sucesso!');
+        } catch (erro) {
+          alert('Erro ao ler o arquivo JSON. Verifique o formato.');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   const formattedSelectedDate = useMemo(() => {
     const [year, month, day] = selectedDate.split('-');
     const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -515,6 +593,22 @@ const App: React.FC = () => {
               <Calendar size={14} className="text-blue-500 shrink-0" />
               <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-transparent font-black text-white text-[10px] sm:text-xs outline-none w-[100px] sm:w-auto" />
             </div>
+
+            {/* Botões de exportar/importar */}
+            <button
+              onClick={handleExportJSON}
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] rounded-xl uppercase transition-all flex items-center gap-1.5"
+              title="Exportar relatório do dia"
+            >
+              <Download size={14} /> Exportar
+            </button>
+            <button
+              onClick={handleImportJSON}
+              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] rounded-xl uppercase transition-all flex items-center gap-1.5"
+              title="Importar relatório"
+            >
+              <Upload size={14} /> Importar
+            </button>
           </div>
         </header>
 
