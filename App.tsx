@@ -116,7 +116,6 @@ const ShipLogo = memo(({ className = "w-24 h-auto", customUrl }: { className?: s
   );
 });
 
-// PersonnelView agora recebe as anotações via props
 const PersonnelView: React.FC<{ 
   data: PersonnelData; 
   onChange: (key: keyof PersonnelData, value: any) => void;
@@ -208,7 +207,7 @@ const PersonnelView: React.FC<{
         <textarea
           value={serviceNotes}
           onChange={(e) => onServiceNotesChange(e.target.value)}
-          placeholder="Digite aqui observações gerais..."
+          placeholder="Digite aqui observações gerais, ocorrências, lembretes, procedimentos ou qualquer informação relevante para o serviço..."
           className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 font-mono text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none transition-all resize-y min-h-[200px] text-base"
         />
         
@@ -225,6 +224,7 @@ const PersonnelView: React.FC<{
 // ========== INICIALIZAÇÃO SÍNCRONA ==========
 const initializeAppData = () => {
   let savedDate = localStorage.getItem('selected_date') || new Date().toISOString().split('T')[0];
+  console.log('📅 Data salva encontrada:', savedDate);
 
   let report: DailyReport | null = null;
   const savedReport = localStorage.getItem(`report_${savedDate}`);
@@ -268,11 +268,13 @@ const initializeAppData = () => {
       eductorStatuses: {},
       isisOverrides: {},
       logs: [],
-      serviceNotes: localStorage.getItem('service_notes') || ''  // fallback do antigo
+      serviceNotes: localStorage.getItem('service_notes') || ''
     };
-  } else if (!report.serviceNotes) {
-    // Se o relatório não tem serviceNotes, carrega do localStorage antigo
-    report.serviceNotes = localStorage.getItem('service_notes') || '';
+  } else {
+    // Garante que serviceNotes exista, senão tenta recuperar do localStorage antigo
+    if (!report.serviceNotes) {
+      report.serviceNotes = localStorage.getItem('service_notes') || '';
+    }
   }
 
   return { savedDate, report };
@@ -310,48 +312,18 @@ const App: React.FC = () => {
     { id: 'personnel', icon: <Users size={18} />, label: 'Quarto de Serviço' }
   ], []);
 
-  // Slides do Modo TV (todas as abas)
-  const TV_SLIDES = useMemo(() => [
-    {
-      label: 'DASHBOARD',
-      component: (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 sm:gap-12">
-          <FuelPanel fuel={fuelData} onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
-          <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
-          <StatusCharts data={equipmentData} />
-          <ActivityLog logs={logs} />
-        </div>
-      )
-    },
-    {
-      label: 'ESTABILIDADE',
-      component: <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
-    },
-    {
-      label: 'CARGAS',
-      component: <FuelPanel fuel={fuelData} fullWidth onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
-    },
-    {
-      label: 'EQUIPAMENTOS',
-      component: <EquipmentSection categories={CATEGORIES} data={equipmentData} onStatusChange={handleStatusChange} />
-    },
-    {
-      label: 'CAV',
-      component: <CAVPanel eductorStatuses={eductorStatuses} onStatusToggle={handleEductorToggle} />
-    },
-    {
-      label: 'RESTRIÇÕES',
-      component: <RestrictionsPanel data={equipmentData} reasons={restrictionReasons} onReasonChange={handleReasonChange} />
-    },
-    {
-      label: 'ISIS',
-      component: <IsisPanel overrides={isisOverrides} onOverrideChange={handleIsisOverride} />
-    },
-    {
-      label: 'PESSOAL',
-      component: <PersonnelView data={personnelData} onChange={(k, v) => saveData({ personnel: { ...personnelData, [k as keyof PersonnelData]: v } })} serviceNotes={serviceNotes} onServiceNotesChange={handleServiceNotesChange} />
+  // Handler de anotações do serviço (precisa estar definido antes de qualquer uso)
+  const handleServiceNotesChange = (notes: string) => {
+    setServiceNotes(notes);
+    localStorage.setItem('service_notes', notes); // compatibilidade
+    // Salva também no relatório diário
+    const currentReport = localStorage.getItem(`report_${selectedDate}`);
+    if (currentReport) {
+      const report = JSON.parse(currentReport) as DailyReport;
+      report.serviceNotes = notes;
+      localStorage.setItem(`report_${selectedDate}`, JSON.stringify(report));
     }
-  ], [fuelData, stabilityData, equipmentData, eductorStatuses, restrictionReasons, isisOverrides, personnelData, logs, serviceNotes]);
+  };
 
   const updateSelectedDate = (newDate: string) => {
     setSelectedDate(newDate);
@@ -382,18 +354,6 @@ const App: React.FC = () => {
       setLogs([]);
       setServiceNotes('');
       console.log('📭 Nenhum dado para', newDate);
-    }
-  };
-
-  const handleServiceNotesChange = (notes: string) => {
-    setServiceNotes(notes);
-    localStorage.setItem('service_notes', notes); // compatibilidade
-    // Salva também no relatório diário de forma imediata
-    const currentReport = localStorage.getItem(`report_${selectedDate}`);
-    if (currentReport) {
-      const report = JSON.parse(currentReport) as DailyReport;
-      report.serviceNotes = notes;
-      localStorage.setItem(`report_${selectedDate}`, JSON.stringify(report));
     }
   };
 
@@ -514,9 +474,9 @@ const App: React.FC = () => {
     }
   };
 
-  // 📤 Exportar JSON
+  // 📤 Exportar JSON (agora com anotações)
   const handleExportJSON = () => {
-    saveCurrentReport(); // garante que o último estado está salvo
+    saveCurrentReport();
     const relatorio: DailyReport = {
       date: selectedDate,
       equipment: equipmentData,
@@ -527,7 +487,7 @@ const App: React.FC = () => {
       eductorStatuses,
       isisOverrides,
       logs,
-      serviceNotes  // ⬅️ incluído
+      serviceNotes
     };
     const blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -540,7 +500,7 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // 📥 Importar JSON
+  // 📥 Importar JSON (agora com anotações)
   const handleImportJSON = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -571,7 +531,7 @@ const App: React.FC = () => {
           setEductorStatuses(dados.eductorStatuses || {});
           setIsisOverrides(dados.isisOverrides || {});
           setLogs(dados.logs || []);
-          setServiceNotes(dados.serviceNotes || '');  // ⬅️ incluído
+          setServiceNotes(dados.serviceNotes || '');
           localStorage.setItem(`report_${usarDataOriginal ? dados.date : selectedDate}`, JSON.stringify(dados));
           if (dados.restrictionReasons) {
             const masterReasonsStr = localStorage.getItem('master_equipment_reasons');
@@ -615,19 +575,14 @@ const App: React.FC = () => {
           <button onClick={() => setView('menu-inicial')} className="bg-red-600 px-8 py-4 rounded-xl font-black">SAIR</button>
         </div>
         <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-          {TV_SLIDES[currentTvSlide]?.component}
+          {currentTvSlide === 0 && <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />}
+          {currentTvSlide === 1 && <FuelPanel fuel={fuelData} fullWidth onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />}
+          {currentTvSlide === 2 && <EquipmentSection categories={CATEGORIES} data={equipmentData} onStatusChange={handleStatusChange} />}
+          {currentTvSlide === 3 && <CAVPanel eductorStatuses={eductorStatuses} onStatusToggle={handleEductorToggle} />}
         </div>
-        <div className="bg-slate-900 p-6 flex justify-center gap-4 flex-wrap">
-          {TV_SLIDES.map((slide, i) => (
-            <button
-              key={slide.label}
-              onClick={() => setCurrentTvSlide(i)}
-              className={`px-6 py-3 rounded-xl font-black text-sm uppercase transition-all ${
-                currentTvSlide === i ? 'bg-blue-600 scale-105' : 'bg-slate-800 hover:bg-slate-700'
-              }`}
-            >
-              {slide.label}
-            </button>
+        <div className="bg-slate-900 p-6 flex justify-center gap-6">
+          {['ESTABILIDADE', 'CARGAS', 'EQUIPAMENTOS', 'CAV'].map((l, i) => (
+            <button key={l} onClick={() => setCurrentTvSlide(i)} className={`px-10 py-4 rounded-xl font-black ${currentTvSlide === i ? 'bg-blue-600' : 'bg-slate-800'}`}>{l}</button>
           ))}
         </div>
       </div>
