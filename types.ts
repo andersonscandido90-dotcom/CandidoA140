@@ -71,6 +71,7 @@ export interface DailyReport {
   stability: StabilityData;
   personnel: PersonnelData;
   logs?: LogEntry[];
+  serviceNotes?: string;
   restrictionReasons?: Record<string, string>;
   eductorStatuses?: Record<string, boolean>;
   isisOverrides?: Record<string, string>;
