@@ -317,6 +317,63 @@ const App: React.FC = () => {
     { id: 'personnel', icon: <Users size={18} />, label: 'Quarto de Serviço' }
   ], []);
 
+  // 🖥️ Slides do Modo TV (todas as abas)
+  const TV_SLIDES = useMemo(() => [
+    {
+      label: 'DASHBOARD',
+      component: (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 sm:gap-12">
+          <FuelPanel fuel={fuelData} onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
+          <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+          <StatusCharts data={equipmentData} />
+          <ActivityLog logs={logs} />
+        </div>
+      )
+    },
+    {
+      label: 'ESTABILIDADE',
+      component: (
+        <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />
+      )
+    },
+    {
+      label: 'CARGAS',
+      component: (
+        <FuelPanel fuel={fuelData} fullWidth onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />
+      )
+    },
+    {
+      label: 'EQUIPAMENTOS',
+      component: (
+        <EquipmentSection categories={CATEGORIES} data={equipmentData} onStatusChange={handleStatusChange} />
+      )
+    },
+    {
+      label: 'CAV',
+      component: (
+        <CAVPanel eductorStatuses={eductorStatuses} onStatusToggle={handleEductorToggle} />
+      )
+    },
+    {
+      label: 'RESTRIÇÕES',
+      component: (
+        <RestrictionsPanel data={equipmentData} reasons={restrictionReasons} onReasonChange={handleReasonChange} />
+      )
+    },
+    {
+      label: 'ISIS',
+      component: (
+        <IsisPanel overrides={isisOverrides} onOverrideChange={handleIsisOverride} />
+      )
+    },
+    {
+      label: 'PESSOAL',
+      component: (
+        <PersonnelView data={personnelData} onChange={(k, v) => saveData({ personnel: { ...personnelData, [k as keyof PersonnelData]: v } })} />
+      )
+    }
+  ], [fuelData, stabilityData, equipmentData, eductorStatuses, restrictionReasons, isisOverrides, personnelData, logs]);
+
   const updateSelectedDate = (newDate: string) => {
     setSelectedDate(newDate);
     localStorage.setItem('selected_date', newDate);
@@ -558,14 +615,20 @@ const App: React.FC = () => {
           <button onClick={() => setView('menu-inicial')} className="bg-red-600 px-8 py-4 rounded-xl font-black">SAIR</button>
         </div>
         <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-          {currentTvSlide === 0 && <StabilityPanel fuelData={fuelData} data={stabilityData} onChange={(k, v) => saveData({ stability: {...stabilityData, [k]: v}})} />}
-          {currentTvSlide === 1 && <FuelPanel fuel={fuelData} fullWidth onChange={(k, v) => saveData({ fuel: {...fuelData, [k]: v}})} />}
-          {currentTvSlide === 2 && <EquipmentSection categories={CATEGORIES} data={equipmentData} onStatusChange={handleStatusChange} />}
-          {currentTvSlide === 3 && <CAVPanel eductorStatuses={eductorStatuses} onStatusToggle={handleEductorToggle} />}
+          {/* Renderiza o slide atual usando o array TV_SLIDES */}
+          {TV_SLIDES[currentTvSlide]?.component}
         </div>
-        <div className="bg-slate-900 p-6 flex justify-center gap-6">
-          {['ESTABILIDADE', 'CARGAS', 'EQUIPAMENTOS', 'CAV'].map((l, i) => (
-            <button key={l} onClick={() => setCurrentTvSlide(i)} className={`px-10 py-4 rounded-xl font-black ${currentTvSlide === i ? 'bg-blue-600' : 'bg-slate-800'}`}>{l}</button>
+        <div className="bg-slate-900 p-6 flex justify-center gap-4 flex-wrap">
+          {TV_SLIDES.map((slide, i) => (
+            <button
+              key={slide.label}
+              onClick={() => setCurrentTvSlide(i)}
+              className={`px-6 py-3 rounded-xl font-black text-sm uppercase transition-all ${
+                currentTvSlide === i ? 'bg-blue-600 scale-105' : 'bg-slate-800 hover:bg-slate-700'
+              }`}
+            >
+              {slide.label}
+            </button>
           ))}
         </div>
       </div>
@@ -654,7 +717,6 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* ⬇️ Ícones invertidos conforme solicitado */}
             <button
               onClick={handleExportJSON}
               className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] rounded-xl uppercase transition-all flex items-center gap-1.5"
